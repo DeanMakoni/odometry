@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/install/setup.sh

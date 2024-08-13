@@ -1,0 +1,8 @@
+prefix=/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel
+
+Name: cola2_msgs
+Description: Description of cola2_msgs
+Version: 24.1.0
+Cflags: -I/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/include
+Libs: -L${prefix}/lib 
+Requires: std_msgs sensor_msgs actionlib_msgs geometry_msgs nav_msgs message_generation message_runtime
