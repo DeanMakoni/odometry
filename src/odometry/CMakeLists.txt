@@ -145,6 +145,8 @@ include_directories(
   ${GLog_INCLUDE_DIRS}
   ${gflags_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+  /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/back_end
+  /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/include
   ${CMAKE_BINARY_DIR}/datatypes

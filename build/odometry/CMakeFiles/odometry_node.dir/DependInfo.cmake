@@ -27,10 +27,7 @@ set(CMAKE_TARGET_DEFINITIONS_CXX
   "ROSCONSOLE_BACKEND_LOG4CXX"
   "ROS_BUILD_SHARED_LIBS=1"
   "ROS_PACKAGE_NAME=\"odometry\""
-  "TBB_SUPPRESS_DEPRECATED_MESSAGES=1"
-  "TBB_USE_GCC_BUILTINS=1"
   "_LINUX_"
-  "__TBB_GCC_BUILTIN_ATOMICS_PRESENT=1"
   )
 
 # The include file search paths:
@@ -38,6 +35,8 @@ set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/include"
   "/opt/ros/noetic/include"
   "/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp"
+  "/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/back_end"
+  "/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end"
   "/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry"
   "/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include"
   "datatypes"
