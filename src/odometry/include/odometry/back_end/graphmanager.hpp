@@ -159,8 +159,8 @@ public:
     }
 
    // Accessor methods for graph and newNodes
-   std::shared_ptr<gtsam::NonlinearFactorGraph> getGraph() const;
-   gtsam::Values getNewNodes() const;
+   gtsam::NonlinearFactorGraph& getGraph() const;
+   gtsam::Values& getNewNodes();
    std::shared_ptr<gtsam::NonlinearFactorGraph> graph;
    gtsam::Values newNodes;  // Initialize if needed or remove if unused
    

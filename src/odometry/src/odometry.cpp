@@ -41,12 +41,15 @@
 #include "/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/IMU.h"
 #include "/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/Pressure.h"
 #include"/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/sssimageprocessing.h"
+#include"/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/SSSFrame.h"
 
 #include <opencv2/opencv.hpp>
 #include <cmath>
 #include <vector>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <omp.h>
+#include <GeographicLib/UTMUPS.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -70,6 +73,7 @@ public:
     // Thread Management
     mutable std::mutex stereo_mutex;
     mutable std::mutex imu_mutex;
+    mutable std::mutex sss_mutex;
     mutable std::mutex depth_mutex;
     mutable std::mutex velocity_mutex; 
     gtsam::Key biasKey = gtsam::Symbol('b', 0);
@@ -93,6 +97,9 @@ public:
    std::shared_ptr<ConstantTwistScenario>  sick;
    // std::shared_ptr<ScenarioRunner>  runner
    std::unique_ptr<ScenarioRunner> runner;
+   // Create a std::vector to hold SSSFrame objects
+   std::vector<SSSFrame> frames; 
+   
    
 protected:
    
@@ -164,12 +171,12 @@ private:
     uint count;
   
   
-    std::unique_ptr<GraphManager> graphManager;
-    std::unique_ptr<Optimisation> optimisation;
-    std::unique_ptr<IMU> Imu;
-    std::unique_ptr<PRESSURE> Pressure;
-    std::unique_ptr<DVL> dvl;
-    std::unique_ptr<SSSImageProcessing> ImageProcessing;
+    std::shared_ptr<GraphManager> graphManager;
+    std::shared_ptr<Optimisation> optimisation;
+    std::shared_ptr<IMU> Imu;
+    std::shared_ptr<PRESSURE> Pressure;
+    std::shared_ptr<DVL> dvl;
+    std::shared_ptr<SSSImageProcessing> ImageProcessing;
     
 };
 
@@ -215,10 +222,10 @@ ROSVO::ROSVO(ros::NodeHandle nh): nh_(nh){
     
      
   // Instantiate GraphManager using a unique pointer
-  graphManager = std::make_unique<GraphManager>();
+  graphManager = std::make_shared<GraphManager>();
   // Instantiate Optimisation using a unique pointer
-  optimisation = std::make_unique<Optimisation>();
-  ImageProcessing = std::make_unique<SSSImageProcessing>();
+  optimisation = std::make_shared<Optimisation>();
+  ImageProcessing = std::make_shared<SSSImageProcessing>();
   // Initialise factor graph keys
   graphManager->set_named_key("barometer", 0, 1);
   graphManager->set_named_key("pose", 0, 1);
@@ -237,9 +244,10 @@ ROSVO::ROSVO(ros::NodeHandle nh): nh_(nh){
    double gyro_bias_rw_sigma = 0.000000001;
    gtsam::imuBias::ConstantBias prior_imu_bias;
    gtsam::imuBias::ConstantBias prev_bias;
+   
     
    // Instantiate IMU using a unique pointer
-   Imu = std::make_unique<IMU>(
+   Imu = std::make_shared<IMU>(
         accel_noise_sigma, 
         gyro_noise_sigma, 
         accel_bias_rw_sigma, 
@@ -248,9 +256,9 @@ ROSVO::ROSVO(ros::NodeHandle nh): nh_(nh){
         prev_bias
     );
    // Instantiate Pressure sensor using a unique pointer
-   Pressure = std::make_unique<PRESSURE>();
+   Pressure = std::make_shared<PRESSURE>();
    // Instantiate DVL sensor using a unique pointer
-   dvl = std::make_unique<DVL>();
+   dvl = std::make_shared<DVL>();
    
    double angleStdDev = 0.000001745; // rad
    double angularVelocityStdDev = 0.00001745; // rad/s
@@ -347,6 +355,8 @@ void ROSVO::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
  
  if (next_pose_key == 0){
        
+       std::cout << "initial pose key: " <<next_pose_key << std::endl;
+       std::cout << "initial velocity key: " <<next_velocity_key << std::endl;
        NavState initial_state = sick->navState(0);
        // Get NavState at current time
        //geometry_msgs::Quaternion orient = msg->orientation; 
@@ -369,13 +379,13 @@ void ROSVO::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
        graphManager->getNewNodes().insert(B(next_bias_key), imuBias::ConstantBias());
        //graph->emplace_shared< PriorFactor<Pose3> >(X(next_pose_key),initial_state.pose(), pose_noise);
        //graph->emplace_shared< PriorFactor<Vector3> >(V(next_velocity_key), initial_state.v(), velocity_noise_model);
-       graphManager->getGraph()->emplace_shared< PriorFactor<Pose3> >(X(next_pose_key),optimisation->prior_pose, Imu->pose_noise);
-       graphManager->getGraph()->emplace_shared< PriorFactor<Vector3> >(V(next_velocity_key), optimisation->prior_velocity, Imu->velocity_noise_model);
-       graphManager->getGraph()->emplace_shared< PriorFactor<imuBias::ConstantBias> >(B(next_bias_key), Imu->prior_imu_bias, Imu->bias_noise_model);
+       graphManager->getGraph().emplace_shared< PriorFactor<Pose3> >(X(next_pose_key),optimisation->prior_pose, Imu->pose_noise);
+       graphManager->getGraph().emplace_shared< PriorFactor<Vector3> >(V(next_velocity_key), optimisation->prior_velocity, Imu->velocity_noise_model);
+       graphManager->getGraph().emplace_shared< PriorFactor<imuBias::ConstantBias> >(B(next_bias_key), Imu->prior_imu_bias, Imu->bias_noise_model);
        
       
       std::ofstream ofs("graph1.dot");
-      graphManager->getGraph()->saveGraph(ofs);
+      graphManager->getGraph().saveGraph(ofs);
       ofs.close();
            
       graphManager->increment("pose");
@@ -495,8 +505,16 @@ void ROSVO::dvlCallback(const cola2_msgs::DVL::ConstPtr& msg) {
    
    velocity_mutex.lock();
   // if (msg->header.stamp >= this->timestamp("pose")){
-     dvl->AddDVLMessage(*msg);
-  
+  // Create a local copy of the message
+    cola2_msgs::DVL modified_msg;
+
+    // Add 5 to each velocity component
+    modified_msg.velocity.x += 5.0;
+    modified_msg.velocity.y += 8.0;
+    modified_msg.velocity.z += 9.0;
+    
+    dvl->AddDVLMessage(*msg);
+    
 //    } 
 //   else{
  //    ROS_WARN("DVL message timestamp is less than the keyframe timestamp");
@@ -549,11 +567,14 @@ void ROSVO::groundCallback(const nav_msgs::Odometry::ConstPtr& msg)
 // Callback function for Image data
 // Using SSS image as a call back function
 void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
-    ROS_INFO("Image Data");
     
+     sss_mutex.lock();
      // Convert ROS image message to OpenCV image
      cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-     cv::Mat sssImage = cv_ptr->image;
+     //cv::Mat sssImage = cv_ptr->image;
+     std::string imagePath = "/home/jetson/Desktop/sss3.jpg";  // Modify this path
+     cv::Mat sssImage = cv::imread(imagePath);
+    
      if (sssImage.empty()) {
           ROS_ERROR("Received empty SSS image.");
          return;
@@ -565,63 +586,115 @@ void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
     int next_bias_key = graphManager->key("imu_bias");
     int next_barometer_key = graphManager->key("barometer");
     int next_dvl_key = graphManager->key("dvl");
-    
+    std::cout << "pose key: " <<next_pose_key << std::endl;
+    std::cout << "velocity key: " <<next_velocity_key << std::endl;
     if (next_pose_key > 0){ 
-      imu_mutex.lock();
+     
       //TODO: Set timestamp for this pose that we want to optimise
       graphManager->set_timestamp("pose", msg->header.stamp);
       ros::Time sonar_timestamp = msg->header.stamp;
       // add imu factors
-      Imu->AddCombinedIMUFactor(graphManager->graph, X(graphManager->key("pose", -1)),
-                             V(graphManager->key("pose", -1)),X(graphManager->key("pose")),V(graphManager->key("velocity")),
-                              B(graphManager->key("imu_bias", -1)), B(graphManager->key("imu_bias")));
-       // add IMU values to graph
-       Imu->AddValuesToNodes(optimisation->prev_state, 
-                             optimisation->prop_state, 
-                             graphManager->newNodes, 
-                             X(graphManager->key("pose")),V(graphManager->key("velocity")),
-                             B(graphManager->key("imu_bias")) );
+      Imu->AddCombinedIMUFactor(graphManager->getGraph(), X(graphManager->key("pose", -1)),
+                             V(graphManager->key("pose", -1)), X(graphManager->key("pose")), V(graphManager->key("velocity")),
+                             B(graphManager->key("imu_bias", -1)), B(graphManager->key("imu_bias")));
+      // add IMU values to graph
+      Imu->AddValuesToNodes(optimisation->prev_state, 
+                            optimisation->prop_state, 
+                            graphManager->getNewNodes(), 
+                            X(graphManager->key("pose")), V(graphManager->key("velocity")),
+                            B(graphManager->key("imu_bias")) );
       // add pressure factors      
-      Pressure->AddPressureFactor(graphManager->graph, X(graphManager->key("pose")), P(graphManager->key("barometer")),sonar_timestamp);
+      Pressure->AddPressureFactor(graphManager->getGraph(), X(graphManager->key("pose")), P(graphManager->key("barometer")),sonar_timestamp);
       //add Pressure values
       Pressure->AddPressureValues(graphManager->newNodes, P(graphManager->key("barometer")));
       //add DVL factors
-      dvl->AddDVLFactor(graphManager->graph, sonar_timestamp,
-                       X(graphManager->key("pose")),D(graphManager->key("dvl")), body_P_sensor);
+      dvl->AddDVLFactor(graphManager->getGraph(), sonar_timestamp,
+                     X(graphManager->key("pose")), D(graphManager->key("dvl")), body_P_sensor);
      //add DVL values
-     dvl->AddDVLValues(graphManager->newNodes,D(graphManager->key("dvl")));
+      dvl->AddDVLValues(graphManager->newNodes,D(graphManager->key("dvl")));
      
      
     
-     cv::Mat L_slope = ImageProcessing->computeSlantRange(sssImage, 13.6364, 1531,1, 100);
+    //cv::Mat L_slope = ImageProcessing->computeSlantRange(sssImage, 13.6364, 1531,1, 100);
      /// Call SSS image processing functions
    //cv::Mat correctedImage = correctDistortion(sssImage,depth, L_slope);
-    cv::Mat result = ImageProcessing->removeNadir(sssImage);
+    cv::Mat nadirRemoved = ImageProcessing->removeNadir(sssImage);
+    cv::Mat brightnessEqualised = ImageProcessing->equalizeColumnBrightness(nadirRemoved);
+   // Display the image
     cv::imshow("SSS Image", sssImage);
     cv::waitKey(1);
-    cv::imshow("Nadir Removed", result);
+    cv::imshow("Nadir Removed", nadirRemoved);
     cv::waitKey(1);
-   //cv::imshow("Corrected Image after sticthing", correctedImage);  
-   //equalizeColumnBrightness(result);
-   // Display the image
-   // Display the image
+    cv::imshow("Brightness Equalised", brightnessEqualised);
+    cv::waitKey(1);
+    
+    if (!frames.empty()) {
+    // Assign temporal global id  by using previous pose
+     gtsam::Pose3 temp_pose = optimisation->prop_state.pose();
+     gtsam::Point3 translation = temp_pose.translation();
+     // Extract the x and y coordinates
+     double x_t = translation.x();
+     double y_t = translation.y();
+     // store the georeferenced image
+     double lat, lon, alt1;
+     int zone;
+     bool northp;
+     GeographicLib::UTMUPS::Reverse(x_t, y_t, zone, northp, lat, lon);
+     SSSFrame sourceFrame(brightnessEqualised,X(graphManager->key("pose")), lat, lon, alt1);
+     // compare with prev frame fisrst
+     SSSFrame& prevFrame = frames.back();
+     // Compute phase correlation and translation
+     cv::Point2d phase_translation = ImageProcessing->phaseCorrelation(brightnessEqualised, prevFrame.image);
+     gtsam::Point2 measured_translation(phase_translation.x, phase_translation.y);
+     // add factor to graph
+     ImageProcessing->AddSSSFactor(graphManager->getGraph(),sourceFrame.poseKey , prevFrame.poseKey , measured_translation);
+     ImageProcessing->AddSSSValues(graphManager->newNodes, prevFrame.poseKey, 
+             optimisation->getResult().at<gtsam::Pose3>(prevFrame.poseKey));
    
-   
-   /**
-   //cv::imshow("Corrected Image after brightness equalisation", correctedImage);
-   CorrectedImages.push_back(correctedImage);
-   
-   // Compare the new corrected image with all previously stored images
-   // this might need changes
-   for (const auto& prevImage : CorrectedImages) {
-        cv::Point2d translation = phaseCorrelation(prevImage, correctedImage);
-        //ROS_INFO("Translation with previous image: x = %f, y = %f", translation.x, translation.y);
+     #pragma omp parallel for
+     for (int i = 0; i < frames.size()-1; ++i) {
+        // Calculate X and Y distances between the source frame and the current frame
+        auto distanceXY = SSSFrame::calculateXYDistance(sourceFrame, frames[i]);
+        double dx = distanceXY.first;  // X distance (East-West)
+        double dy = distanceXY.second; // Y distance (North-South)
+
+        // Check if the distances are within the threshold
+        if (std::abs(dx) <= 5) {
+            // Compute phase correlation and translation
+            cv::Point2d translation = ImageProcessing->phaseCorrelation(brightnessEqualised, frames[i].image);
+            gtsam::Point2 measured_translation(translation.x, translation.y);
+            // add factor to graph
+            ImageProcessing->AddSSSFactor(graphManager->getGraph(),sourceFrame.poseKey ,frames[i].poseKey , measured_translation);
+            ImageProcessing->AddSSSValues(graphManager->newNodes, frames[i].poseKey, 
+             optimisation->getResult().at<gtsam::Pose3>(frames[i].poseKey));
+            #pragma omp critical
+            {   
+                std::cout << "Overlap with frame " << i << " (Key: " << frames[i].poseKey << ")\n";
+                std::cout << "X distance: " << dx << " meters, Y distance: " << dy << " meters\n";
+                
+            }
+        }
     }
-   **/
-   
      
+    } 
+   
+
      // Optimise and publish
      optimisation->Optimise_and_publish(*graphManager,*Imu);
+    
+     gtsam::Pose3 optimised_pose = optimisation->getResult().at<gtsam::Pose3>(X(graphManager->key("pose")));
+     gtsam::Point3 translation = optimised_pose.translation();
+     // Extract the x and y coordinates
+     double x_t = translation.x();
+     double y_t = translation.y();
+     // store the georeferenced image
+     double lat, lon, alt1;
+     int zone;
+     bool northp;
+     GeographicLib::UTMUPS::Reverse(x_t, y_t, zone, northp, lat, lon);
+     SSSFrame frame(brightnessEqualised,X(graphManager->key("pose")), lat, lon, alt1);
+     // Add frames to the vector
+     frames.emplace_back(frame);   
      
      // Increment keys
      graphManager->increment("pose");
@@ -630,8 +703,9 @@ void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
      graphManager->increment("barometer");
      graphManager->increment("dvl");
      
-     imu_mutex.unlock();
+     
      }
+ sss_mutex.unlock();
 }
 
 

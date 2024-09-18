@@ -54,7 +54,7 @@ CMAKE_BINARY_DIR = /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build
 include cola2_msgs/CMakeFiles/_cola2_msgs_generate_messages_check_deps_CaptainStatus.dir/progress.make
 
 cola2_msgs/CMakeFiles/_cola2_msgs_generate_messages_check_deps_CaptainStatus:
-	cd /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build/cola2_msgs && ../catkin_generated/env_cached.sh /usr/bin/python3 /opt/ros/noetic/share/genmsg/cmake/../../../lib/genmsg/genmsg_check_deps.py cola2_msgs /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/cola2_msgs/msg/CaptainStatus.msg cola2_msgs/MissionState:std_msgs/Header
+	cd /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build/cola2_msgs && ../catkin_generated/env_cached.sh /usr/bin/python3 /opt/ros/noetic/share/genmsg/cmake/../../../lib/genmsg/genmsg_check_deps.py cola2_msgs /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/cola2_msgs/msg/CaptainStatus.msg std_msgs/Header:cola2_msgs/MissionState
 
 _cola2_msgs_generate_messages_check_deps_CaptainStatus: cola2_msgs/CMakeFiles/_cola2_msgs_generate_messages_check_deps_CaptainStatus
 _cola2_msgs_generate_messages_check_deps_CaptainStatus: cola2_msgs/CMakeFiles/_cola2_msgs_generate_messages_check_deps_CaptainStatus.dir/build.make

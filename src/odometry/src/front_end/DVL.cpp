@@ -15,7 +15,7 @@ void DVL::AddDVLMessage(const cola2_msgs::DVL& dvl_msg) {
 }
 
 // Method to add DVL factors to the graph
-void DVL::AddDVLFactor(std::shared_ptr<gtsam::NonlinearFactorGraph> graph, const ros::Time& sonar_timestamp,
+void DVL::AddDVLFactor(gtsam::NonlinearFactorGraph& graph, const ros::Time& sonar_timestamp,
                        gtsam::Key pose_key, gtsam::Key dvl_key, const gtsam::Pose3& body_P_sensor) {
     //std::lock_guard<std::mutex> lock(velocity_mutex);
 
@@ -25,7 +25,7 @@ void DVL::AddDVLFactor(std::shared_ptr<gtsam::NonlinearFactorGraph> graph, const
             this->dvl_velocity = gtsam::Vector3(it->velocity.x, it->velocity.y, it->velocity.z);
             gtsam::NavState navstate(gtsam::Rot3(), gtsam::Point3(), dvl_velocity);
 
-            graph->emplace_shared<DVLFactor>(
+            graph.emplace_shared<DVLFactor>(
               pose_key,dvl_key , this->dvl_velocity, body_P_sensor, this->dvl_noise);
 
             //velocity_updated = true;

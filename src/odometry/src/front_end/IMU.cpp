@@ -72,7 +72,7 @@ IMU::IMU(
     this->p->biasAccOmegaInt = bias_acc_omega_init;
 
     // Initialize preintegrated measurements
-    this->preintegrated = std::make_shared<gtsam::PreintegratedCombinedMeasurements>(this->p, prior_imu_bias);
+    this->preintegrated = boost::make_shared<gtsam::PreintegratedCombinedMeasurements>(this->p, prior_imu_bias);
     assert(this->preintegrated);
      // Noise models for IMU
     this->velocity_noise_model = gtsam::noiseModel::Isotropic::Sigma(3, 0.00001); // m/s
@@ -81,12 +81,12 @@ IMU::IMU(
     
 }
 
-void IMU::AddCombinedIMUFactor(std::shared_ptr<gtsam::NonlinearFactorGraph> graph, gtsam::Key prev_pose_key,
+void IMU::AddCombinedIMUFactor(gtsam::NonlinearFactorGraph& graph, gtsam::Key prev_pose_key,
                              gtsam::Key prev_velocity_key, gtsam::Key pose_key, gtsam::Key velocity_key,
                              gtsam::Key prev_bias_key, gtsam::Key bias_key) {
-     if (!graph) {
-        throw std::runtime_error("Graph pointer is null.");
-    }
+  //   if (!graph) {
+  //      throw std::runtime_error("Graph pointer is null.");
+   // }
 
     // Check that preintegrated is initialized
     if (!preintegrated) {
@@ -100,7 +100,7 @@ void IMU::AddCombinedIMUFactor(std::shared_ptr<gtsam::NonlinearFactorGraph> grap
     gtsam::imuBias::ConstantBias zero_bias(gtsam::Vector3(0, 0, 0), gtsam::Vector3(0, 0, 0));
 
     // Add the IMU and bias factors to the graph
-    graph->emplace_shared<gtsam::CombinedImuFactor>(
+    graph.emplace_shared<gtsam::CombinedImuFactor>(
         prev_pose_key, 
         prev_velocity_key,
         pose_key, 
@@ -111,8 +111,8 @@ void IMU::AddCombinedIMUFactor(std::shared_ptr<gtsam::NonlinearFactorGraph> grap
     );
 }
 
-void IMU::AddValuesToNodes(const gtsam::NavState prev_state, 
-                           const gtsam::NavState prop_state, 
+void IMU::AddValuesToNodes(gtsam::NavState prev_state, 
+                           gtsam::NavState prop_state, 
                            gtsam::Values& newNodes, gtsam::Key pose_key,
                            gtsam::Key velocity_key,
                            gtsam::Key bias_key) {
@@ -134,7 +134,7 @@ void IMU::AddValuesToNodes(const gtsam::NavState prev_state,
     newNodes.insert(bias_key, prev_bias);
 }
 
-std::shared_ptr<gtsam::PreintegratedCombinedMeasurements> IMU::getPreintegrated() const {
+boost::shared_ptr<gtsam::PreintegratedCombinedMeasurements> IMU::getPreintegrated() const {
     return preintegrated;
 }
 

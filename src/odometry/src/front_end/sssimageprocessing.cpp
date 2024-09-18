@@ -4,8 +4,7 @@
 
 // Constructor implementation
 SSSImageProcessing::SSSImageProcessing() {
-    // You can initialize any member variables here if needed.
-    // For now, nothing specific is needed, so it's empty.
+    sss_noise_model = gtsam::noiseModel::Isotropic::Variance(1, 5);
 }
 
 cv::Mat SSSImageProcessing::correctDistortion(const cv::Mat& sssImage, double H, const cv::Mat& L_slope) {
@@ -53,49 +52,81 @@ cv::Mat SSSImageProcessing::correctDistortion(const cv::Mat& sssImage, double H,
     return correctedImage;
 }
 
-void SSSImageProcessing::equalizeColumnBrightness(cv::Mat& image) {
-    double overallSum = cv::sum(image)[0];
-    double overallAverage = overallSum / (image.rows * image.cols);
+cv::Mat SSSImageProcessing::equalizeColumnBrightness(cv::Mat& image) {
+    // Ensure the image is either grayscale (1 channel) or color (3 channels)
+    CV_Assert(image.channels() == 1 || image.channels() == 3);
 
-    std::vector<double> columnAverages(image.cols, 0.0);
-    for (int col = 0; col < image.cols; ++col) {
-        double columnSum = 0.0;
-        for (int row = 0; row < image.rows; ++row) {
-            columnSum += image.at<uchar>(row, col);
-        }
-        columnAverages[col] = columnSum / image.rows;
+    std::vector<cv::Mat> channels;
+    
+    // If the image is color (BGR), split into three channels (B, G, R)
+    if (image.channels() == 3) {
+        cv::split(image, channels);  // Split into B, G, R channels
+    } else {
+        channels.push_back(image);  // Single-channel grayscale image
     }
 
-    for (int col = 0; col < image.cols; ++col) {
-        double offset = columnAverages[col] - overallAverage;
-        for (int row = 0; row < image.rows; ++row) {
-            int newValue = static_cast<int>(image.at<uchar>(row, col) - offset);
-            image.at<uchar>(row, col) = cv::saturate_cast<uchar>(newValue);
+    // Process each channel (either 1 for grayscale or 3 for color)
+    for (auto& channel : channels) {
+        double overallSum = cv::sum(channel)[0];
+        double overallAverage = overallSum / (channel.rows * channel.cols);
+
+        std::vector<double> columnAverages(channel.cols, 0.0);
+        for (int col = 0; col < channel.cols; ++col) {
+            double columnSum = 0.0;
+            for (int row = 0; row < channel.rows; ++row) {
+                columnSum += channel.at<uchar>(row, col);
+            }
+            columnAverages[col] = columnSum / channel.rows;
+        }
+
+        for (int col = 0; col < channel.cols; ++col) {
+            double offset = columnAverages[col] - overallAverage;
+            for (int row = 0; row < channel.rows; ++row) {
+                int newValue = static_cast<int>(channel.at<uchar>(row, col) - offset);
+                channel.at<uchar>(row, col) = cv::saturate_cast<uchar>(newValue);
+            }
         }
     }
+
+    cv::Mat result;
+    
+    // If the image was color, merge the channels back
+    if (image.channels() == 3) {
+        cv::merge(channels, result);  // Merge the B, G, R channels back together
+    } else {
+        result = channels[0];  // For grayscale, just return the single channel
+    }
+
+    return result;
 }
 
 cv::Point2d SSSImageProcessing::phaseCorrelation(const cv::Mat& img1, const cv::Mat& img2) {
+  // Ensure the input images are of the same size
+    if (img1.size() != img2.size()) {
+        throw std::invalid_argument("Images must be of the same size for phase correlation.");
+    }
+
+    // Convert color images to grayscale
+    cv::Mat img1_gray, img2_gray;
+    cv::cvtColor(img1, img1_gray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(img2, img2_gray, cv::COLOR_BGR2GRAY);
+
+    // Convert images to floating point format (required for phase correlation)
     cv::Mat img1_float, img2_float;
-    img1.convertTo(img1_float, CV_32F);
-    img2.convertTo(img2_float, CV_32F);
+    img1_gray.convertTo(img1_float, CV_32F);
+    img2_gray.convertTo(img2_float, CV_32F);
 
-    cv::Mat fft1, fft2;
-    cv::dft(img1_float, fft1, cv::DFT_COMPLEX_OUTPUT);
-    cv::dft(img2_float, fft2, cv::DFT_COMPLEX_OUTPUT);
-
-    cv::Mat fft1_conj;
-    cv::mulSpectrums(fft1, fft2, fft1_conj, 0, true);
-    cv::normalize(fft1_conj, fft1_conj, 0, 1, cv::NORM_MINMAX);
-
-    cv::Mat ifft;
-    cv::idft(fft1_conj, ifft, cv::DFT_SCALE | cv::DFT_REAL_OUTPUT);
+    // Optionally apply windowing (Hanning window) to reduce edge effects
+    cv::Mat hann;
+    cv::createHanningWindow(hann, img1_float.size(), CV_32F);
+    img1_float = img1_float.mul(hann);
+    img2_float = img2_float.mul(hann);
     
-    cv::Point peakLoc;
-    cv::minMaxLoc(ifft, nullptr, nullptr, nullptr, &peakLoc);
-    
-    cv::Point2d translation(peakLoc.x - img1.cols / 2, peakLoc.y - img1.rows / 2);
-    return translation;
+    // Perform phase correlation to find the translation between img1 and img2
+    cv::Point2d shift = cv::phaseCorrelate(img1_float, img2_float);
+
+    // Return the estimated translation as cv::Point2d
+    return shift;
 }
 
 cv::Mat SSSImageProcessing::computeSlantRange(const cv::Mat& sssImage, double sonarFrequency, double soundSpeed, double minSlantRange, double maxSlantRange) {
@@ -122,55 +153,56 @@ cv::Mat SSSImageProcessing::computeSlantRange(const cv::Mat& sssImage, double so
     
     return slantRangeImage;
 }
-
 cv::Mat SSSImageProcessing::removeNadir(const cv::Mat& img) {
-    if (img.empty()) {
-        throw std::runtime_error("Input image is empty.");
+    // Convert image to grayscale to easily detect the nadir (black) region
+    cv::Mat gray;
+    cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+    
+    // Get the image dimensions
+    int height = gray.rows;
+    int width = gray.cols;
+    
+    // Center of the image
+    int center_x = width / 2;
+    
+    // Initialize the bounds of the nadir region
+    int left_bound = center_x;
+    int right_bound = center_x;
+
+    // Threshold to determine the black region (you can adjust the value 10)
+    int black_threshold = 90;
+
+    // Traverse left from the center to find the boundary of the black region
+    while (left_bound > 0 && cv::mean(gray.col(left_bound))[0] < black_threshold) {
+        left_bound--;
     }
 
-    cv::Mat gray, blurred, binary;
-
-    try {
-        cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
-        cv::GaussianBlur(gray, blurred, cv::Size(5, 5), 0);
-        cv::adaptiveThreshold(blurred, binary, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 15, 5);
-    } catch (const cv::Exception& e) {
-        throw std::runtime_error("Exception during preprocessing: " + std::string(e.what()));
+    // Traverse right from the center to find the boundary of the black region
+    while (right_bound < width && cv::mean(gray.col(right_bound))[0] < black_threshold) {
+        right_bound++;
     }
 
-    cv::Mat morph;
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+    // Define the left and right parts of the image
+    cv::Mat left_part = img(cv::Range(0, height), cv::Range(0, left_bound));
+    cv::Mat right_part = img(cv::Range(0, height), cv::Range(right_bound, width));
 
-    try {
-        cv::morphologyEx(binary, morph, cv::MORPH_CLOSE, kernel);
-    } catch (const cv::Exception& e) {
-        throw std::runtime_error("Exception during morphologyEx: " + std::string(e.what()));
-    }
-
-    std::vector<std::vector<cv::Point>> contours;
-    std::vector<cv::Vec4i> hierarchy;
-
-    try {
-        cv::findContours(morph, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-    } catch (const cv::Exception& e) {
-        throw std::runtime_error("Exception during findContours: " + std::string(e.what()));
-    }
-
-    double minContourArea = 50.0;
-    std::vector<std::vector<cv::Point>> filteredContours;
-    for (size_t i = 0; i < contours.size(); i++) {
-        if (cv::contourArea(contours[i]) > minContourArea) {
-            filteredContours.push_back(contours[i]);
-        }
-    }
-
-    cv::Mat mask = cv::Mat::zeros(img.size(), CV_8UC1);
-    cv::drawContours(mask, filteredContours, -1, cv::Scalar(255), cv::FILLED);
-
+    // Stitch the left and right parts together horizontally
     cv::Mat result;
-    img.copyTo(result, mask);
-
-    cv::morphologyEx(result, result, cv::MORPH_OPEN, kernel);
+    cv::hconcat(left_part, right_part, result);
 
     return result;
+}
+
+// Method to add SSS factors to the graph
+void SSSImageProcessing::AddSSSFactor(gtsam::NonlinearFactorGraph& graph, gtsam::Key key1, gtsam::Key key2, const gtsam::Point2& measured_translation) {
+                      
+      graph.emplace_shared<SSSFactor>(key1, key2, measured_translation, sss_noise_model);
+                        
+       }
+                      
+// Method to add SSS values to the graph
+void SSSImageProcessing::AddSSSValues(gtsam::Values& newNodes, gtsam::Key posekey2,const gtsam::Pose3& pose){
+
+    //newNodes.insert(posekey1, this->pressure);
+    newNodes.insert(posekey2, pose);
 }

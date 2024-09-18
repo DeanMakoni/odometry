@@ -34,7 +34,24 @@ find_package(Pangolin 0.6 REQUIRED)
 find_package(GLog REQUIRED)
 find_package(gflags REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem)
+find_library(FFTW_LIBRARY
+     NAMES fftw3 fftw)
+set(FFTW_LIBRARIES "${FFTW_LIBRARY}")
 
+find_library(FFTW_libm_LIBRARY
+         NAMES m)
+list(APPEND FFTW_LIBRARIES "${FFTW_libm_LIBRARY}")
+# Find GeographicLib header files
+find_path(GeographicLib_INCLUDE_DIR
+  NAMES GeographicLib/Config.h
+  PATHS /usr/local/include /usr/include
+)
+
+# Find GeographicLib library
+find_library(GeographicLib_LIBRARIES
+  NAMES Geographic
+  PATHS /usr/local/lib /usr/lib
+)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -125,7 +142,7 @@ catkin_package(
    INCLUDE_DIRS include
    LIBRARIES odometry
    CATKIN_DEPENDS roscpp std_msgs sensor_msgs geometry_msgs nav_msgs image_transport cv_bridge tf tf2 tf2_ros message_filters
-   DEPENDS OpenCV GTSAM EIGEN3 Pangolin GLog gflags Boost
+   DEPENDS OpenCV GTSAM EIGEN3 Pangolin GLog gflags Boost GeographicLib 
 )
 
 ###########
@@ -145,6 +162,8 @@ include_directories(
   ${GLog_INCLUDE_DIRS}
   ${gflags_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+  ${fftw_path}
+  ${GeographicLib_INCLUDE_DIR}
   /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/back_end
   /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end
   ${PROJECT_SOURCE_DIR}
@@ -152,10 +171,40 @@ include_directories(
   ${CMAKE_BINARY_DIR}/datatypes
   ${CMAKE_CURRENT_BINARY_DIR}
 )
-
+# Include source files
+set(${PROJECT_NAME}_srcs
+    src/back_end/DVLFactor.cpp
+    src/back_end/SSSFactor.cpp
+    src/back_end/PressureFactor.cpp
+    src/back_end/graphmanager.cpp
+    src/front_end/DVL.cpp
+    src/front_end/IMU.cpp
+    src/front_end/Pressure.cpp
+    src/back_end/optimisation.cpp
+    src/front_end/image_dft.cpp
+    src/front_end/image_transforms.cpp
+    src/front_end/image_registration.cpp
+    src/front_end/sssimageprocessing.cpp
+    src/odometry.cpp
+    
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/back_end/DVLFactor.h
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/back_end/SSSFactor.h
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/back_end/PressureFactor.h
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/back_end/graphmanager.hpp
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/image_dft.h
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/image_transforms.h
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/image_registration.h
+    include  /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/DVL.h
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/IMU.h
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/Pressure.h
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/SSSFrame.h
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/front_end/sssimageprocessing.h
+    include /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/back_end/optimisation.hpp
+    
+        )
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
-  src/odometry.cpp
+  ${${PROJECT_NAME}_srcs}
   ##src/DVLFactor.cpp
  )
 
@@ -165,11 +214,14 @@ set(${PROJECT_NAME}_ext_libs
   gflags
   glog::glog
   ${Boost_LIBRARIES}
+ 
 )
 
 #add_library(${PROJECT_NAME} ${${PROJECT_NAME}_srcs})
 target_link_libraries(${PROJECT_NAME}
    ${${PROJECT_NAME}_ext_libs}
+   ${FFTW3_LIBRARIES}
+   ${GeographicLib_LIBRARIES} 
 )
 
 ## Add cmake target dependencies of the library
@@ -197,7 +249,10 @@ target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
   ${Pangolin_LIBRARIES}
+  ${FFTW3_LIBRARIES}
+  ${GeographicLib_LIBRARIES}
   gtsam
+  ${PROJECT_NAME}
    )
    
 #target_link_libraries(odometry

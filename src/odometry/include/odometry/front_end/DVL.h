@@ -42,7 +42,7 @@ public:
     void AddDVLMessage(const cola2_msgs::DVL& dvl_msg);
 
     // Method to add DVL factors to the graph
-    void AddDVLFactor(std::shared_ptr<gtsam::NonlinearFactorGraph> graph, const ros::Time& sonar_timestamp,
+    void AddDVLFactor(gtsam::NonlinearFactorGraph& graph, const ros::Time& sonar_timestamp,
                        gtsam::Key pose_key, gtsam::Key dvl_key, const gtsam::Pose3& body_P_sensor);
 
     // Method to add DVL values to the graph

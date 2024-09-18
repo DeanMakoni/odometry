@@ -20,6 +20,7 @@ set(CMAKE_TARGET_DEFINITIONS_CXX
   "BOOST_SYSTEM_DYN_LINK"
   "BOOST_THREAD_DYN_LINK"
   "BOOST_TIMER_DYN_LINK"
+  "GFLAGS_IS_A_DLL=0"
   "HAVE_EIGEN"
   "HAVE_GLEW"
   "HAVE_PYTHON"
@@ -65,6 +66,7 @@ set(CMAKE_CXX_TARGET_INCLUDE_PATH
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
+  "/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build/odometry/CMakeFiles/odometry.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.

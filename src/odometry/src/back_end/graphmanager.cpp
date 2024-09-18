@@ -5,11 +5,11 @@
 
 
 // Return a const pointer to the graph
-std::shared_ptr<gtsam::NonlinearFactorGraph> GraphManager::getGraph() const {
-    return graph;
+gtsam::NonlinearFactorGraph& GraphManager::getGraph() const {
+    return *graph;
 }
 
 // Return a const reference to newNodes
-gtsam::Values GraphManager::getNewNodes() const {
+gtsam::Values& GraphManager::getNewNodes() {
     return newNodes;
 }

@@ -54,17 +54,17 @@ public:
     );
 
     // Method to add combined IMU factor to the graph
-    void AddCombinedIMUFactor(std::shared_ptr<gtsam::NonlinearFactorGraph> graph, gtsam::Key prev_pose_key,
+    void AddCombinedIMUFactor(gtsam::NonlinearFactorGraph& graph, gtsam::Key prev_pose_key,
                              gtsam::Key prev_velocity_key, gtsam::Key pose_key, gtsam::Key velocity_key,
                              gtsam::Key prev_bias_key, gtsam::Key bias_key);
-    void AddValuesToNodes(const gtsam::NavState prev_state, 
-                          const gtsam::NavState prop_state, 
+    void AddValuesToNodes(gtsam::NavState prev_state, 
+                          gtsam::NavState prop_state, 
                           gtsam::Values& newNodes,
                            gtsam::Key pose_key,
                            gtsam::Key velocity_key,
                            gtsam::Key bias_key);
     // Getter for preintegrated
-    std::shared_ptr<gtsam::PreintegratedCombinedMeasurements> getPreintegrated() const;
+    boost::shared_ptr<gtsam::PreintegratedCombinedMeasurements> getPreintegrated() const;;
     
     // Getter for prev_bias
     gtsam::imuBias::ConstantBias getPrevBias() const;
@@ -85,10 +85,10 @@ public:
     double gyro_bias_rw_sigma; 
     
     // Preintegration parameters
-    std::shared_ptr<gtsam::PreintegratedCombinedMeasurements::Params> p;
+    boost::shared_ptr<gtsam::PreintegratedCombinedMeasurements::Params> p;
 
     // Preintegrated measurements
-    std::shared_ptr<gtsam::PreintegratedCombinedMeasurements> preintegrated;
+    boost::shared_ptr<gtsam::PreintegratedCombinedMeasurements> preintegrated;
     
     // Vector to store IMU messages
     std::vector<sensor_msgs::Imu> imu_messages_;

@@ -57,12 +57,16 @@ DVLFactor::DVLFactor(Key pose_key, Key velocity_key,
 Vector DVLFactor::evaluateError(const Pose3& pose, const Vector3& velocity,
                                 boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
     // Predict velocity in sensor frame
-    Vector3 predicted_velocity = body_P_sensor_.rotation().unrotate(pose.rotation().rotate(velocity));
-
+   // Vector3 predicted_velocity = body_P_sensor_.rotation().unrotate(pose.rotation().rotate(velocity));
+   //  Vector3 predicted_velocity = body_P_sensor_.rotation().unrotate(pose.rotation().rotate(velocity));
+    // Print the predicted velocity
+    //std::cout << "Predicted Velocity: " << velocity.transpose() << std::endl;
+    // Print the measured velocity
+    //std::cout << "Measured Velocity: " << measured_velocity_.transpose() << std::endl;
+    
     // Calculate error
-    Vector3 error = predicted_velocity - measured_velocity_;
-
-    // Jacobian computation
+    Vector3 error = velocity - measured_velocity_;
+     
     if (H1 || H2) {
         // Compute the Jacobian w.r.t the pose
         if (H1) {
@@ -70,7 +74,7 @@ Vector DVLFactor::evaluateError(const Pose3& pose, const Vector3& velocity,
         }
         // Compute the Jacobian w.r.t the velocity
         if (H2) {
-            *H2 = body_P_sensor_.rotation().transpose() * pose.rotation().matrix();
+            (*H2) = gtsam::Matrix33::Identity();
         }
     }
 

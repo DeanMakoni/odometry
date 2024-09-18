@@ -52,7 +52,7 @@ using gtsam::symbol_shorthand::D;  // DVL
 using gtsam::symbol_shorthand::L;  // Landmark point
 
 // Optimisie and pubblissh using ISAM
-void Optimisation::Optimise_and_publish(const GraphManager& graphManager,const IMU& Imu) {
+void Optimisation::Optimise_and_publish(GraphManager& graphManager, IMU& Imu) {
     // ISAM2 solver
     try {
         int max_key = graphManager.key("pose");
@@ -70,22 +70,22 @@ void Optimisation::Optimise_and_publish(const GraphManager& graphManager,const I
         //prior_velocity = result.at<gtsam::Vector3>(V(this->key("velocity")));
         // Overwrite the beginning of the preintegration for the next step.
        this->prev_state =
-          NavState(result.at<Pose3>(X(graphManager.key("pose"))), result.at<gtsam::Vector3>((V(graphManager.key("velocity")))));
+          NavState(result.at<Pose3>(X(1)), result.at<gtsam::Vector3>((V(1))));
         // Update previous bias
        Imu.getPrevBias() = result.at<gtsam::imuBias::ConstantBias>(B(graphManager.key("imu_bias")));
        
        
       // Plotting stuff 
-       gtsam::Pose3 current_pose1 = result.at<gtsam::Pose3>(X(graphManager.key("pose")));
+      gtsam::Pose3 current_pose1 = result.at<gtsam::Pose3>(X(graphManager.key("pose")));
       gtsam::Vector3 current_velocity1 = result.at<gtsam::Vector3>(V(graphManager.key("velocity")));
       gtsam::imuBias::ConstantBias current_bias = result.at<gtsam::imuBias::ConstantBias>(B(graphManager.key("imu_bias")));
 
-   // Extract position
-   gtsam::Point3 position1 = current_pose1.translation();
+      // Extract position
+     gtsam::Point3 position1 = current_pose1.translation();
 
-   // Extract biases
-   gtsam::Vector3 gyro_bias = current_bias.gyroscope();
-   gtsam::Vector3 accel_bias = current_bias.accelerometer();
+     // Extract biases
+     gtsam::Vector3 gyro_bias = current_bias.gyroscope();
+     gtsam::Vector3 accel_bias = current_bias.accelerometer();
        
        // Extract accelerometer and gyroscope biases
    gtsam::Vector3 accel_bias1 = Imu.getPrevBias().accelerometer();
@@ -140,41 +140,23 @@ if (navstate_file.is_open() && bias_file.is_open()) {
             gtsam::Pose3 pose = result.at<gtsam::Pose3>(X(key));
             gtsam::Vector3 position = pose.translation();
             positionsFile << position.x() << " " << position.y() << " " << position.z() << endl;
+            ROS_INFO("Optimised height:  %f", position.z());
         }
-        positionsFile.close();
-       /** 
-       std::ofstream residualsFile("residuals.txt");
-        std::vector<double> residuals;
-        for (size_t i = 0; i < graph->size(); ++i) {
-            gtsam::NonlinearFactor::shared_ptr factor = graph->at(i);
+      positionsFile.close();
+    
+      std::ofstream residualsFile("residuals1.txt");
+      std::vector<double> residuals;
+      size_t graph_size = graphManager.getGraph().size();
+      std::cout << "Graph Size: " << graph_size << std::endl;
+        for (size_t i = 0; i < graphManager.getGraph().size(); ++i) {
+            gtsam::NonlinearFactor::shared_ptr factor = graphManager.getGraph().at(i);
             double error = factor->error(result);
             residuals.push_back(error);
             residualsFile << i << " " << error << std::endl; // Write pose number and residual
             ROS_INFO("Factor %zu error: %f", i, error);
         }
         residualsFile.close();
-        **/
-        // Iterate through each factor in the graph
-        
-       vector<double> residuals;
-       for (size_t i = 0; i <  graphManager.getGraph()->size(); ++i){
-        NonlinearFactor::shared_ptr factor =  graphManager.getGraph()->at(i);
-        
-        // Compute the error for the factor given the current values
-        double error = factor->error(result);
-        
-        // Store the residual
-        residuals.push_back(error);
-        
-        // Print the residual
-        cout << "Factor " << i << " error: " << error << endl;
-       }
-      
-       cout << "Residuals: ";
-      for (double r : residuals) {
-        cout << r << " ";
-      }
-      cout << endl;
+       
       
       gtsam::Matrix poseCovariance = ISAM->marginalCovariance(X(graphManager.key("pose")));
       gtsam::Matrix velocityCovariance = ISAM->marginalCovariance(V(graphManager.key("velocity")));
@@ -215,7 +197,8 @@ if (navstate_file.is_open() && bias_file.is_open()) {
       std::cout << "Velocity Covariance:\n" << velocityCovariance << std::endl;
 
         // Reset the graph
-        graphManager.getGraph()->resize(0);
+        
+        graphManager.getGraph().resize(0);
         graphManager.getNewNodes().clear();
         
         

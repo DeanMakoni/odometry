@@ -36,6 +36,8 @@
 #include <gtsam/inference/Key.h>
 #include <iostream>
 #include <fstream>
+#include "/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/src/odometry/include/odometry/back_end/PressureFactor.h"
+
 
 class PRESSURE {
 public:
@@ -47,7 +49,7 @@ public:
     void AddPressureMessage(const sensor_msgs::FluidPressure& pressure_msg);
 
     // Method to add a Pressure Factor to the graph
-    void AddPressureFactor(std::shared_ptr<gtsam::NonlinearFactorGraph> graph, gtsam::Key pose_key, gtsam::Key barometer_key, 
+    void AddPressureFactor(gtsam::NonlinearFactorGraph& graph, gtsam::Key pose_key, gtsam::Key barometer_key, 
                            const ros::Time& sonar_timestamp);
 
     // Method to add pressure values to nodes

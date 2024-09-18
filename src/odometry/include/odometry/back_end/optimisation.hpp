@@ -65,7 +65,7 @@ public:
     /**
      * Optimise using ISAM2 and publish
      */
-    void Optimise_and_publish(const GraphManager& graphManager,const IMU& Imu);
+    void Optimise_and_publish(GraphManager& graphManager, IMU& Imu);
     //States
     gtsam::NavState  prev_state;
     gtsam::NavState prop_state;
@@ -73,7 +73,11 @@ public:
     gtsam::Pose3 prior_pose;
     gtsam::Vector3 prior_velocity;
     
-    // ros publishers
+    
+    // Getter for the result
+    const gtsam::Values& getResult() const {
+        return result;
+    }
     
     //std::string optimised_odometry_topic;
     //ros::Publisher optimised_odometry_publisher_;
