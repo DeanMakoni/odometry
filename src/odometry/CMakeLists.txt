@@ -30,9 +30,9 @@ find_package(OpenMP REQUIRED)
 SET( EIGEN3_INCLUDE_DIR ${EIGEN3_INCLUDE_DIR} )
 SET( CMAKE_MODULE_PATH $ENV{EIGEN3_DIR} )
 find_package(Eigen3 3.3 REQUIRED)
-find_package(Pangolin 0.6 REQUIRED)
-find_package(GLog REQUIRED)
-find_package(gflags REQUIRED)
+#find_package(Pangolin 0.6 REQUIRED)
+#find_package(GLog REQUIRED)
+#find_package(gflags REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem)
 find_library(FFTW_LIBRARY
      NAMES fftw3 fftw)
@@ -137,12 +137,12 @@ find_library(GeographicLib_LIBRARIES
 ## INCLUDE_DIRS: uncomment this if your package contains header files
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need Pangolin GLog gflags
 catkin_package(
    INCLUDE_DIRS include
    LIBRARIES odometry
    CATKIN_DEPENDS roscpp std_msgs sensor_msgs geometry_msgs nav_msgs image_transport cv_bridge tf tf2 tf2_ros message_filters
-   DEPENDS OpenCV GTSAM EIGEN3 Pangolin GLog gflags Boost GeographicLib 
+   DEPENDS OpenCV GTSAM EIGEN3 Boost GeographicLib 
 )
 
 ###########
@@ -158,9 +158,9 @@ include_directories(
   ${EIGEN3_INCLUDE_DIRS}
   ${GTSAM_INCLUDE_DIR}
   ${OpenCV_INCLUDE_DIRS}
-  ${Pangolin_INCLUDE_DIRS}
-  ${GLog_INCLUDE_DIRS}
-  ${gflags_INCLUDE_DIRS}
+  #${Pangolin_INCLUDE_DIRS}
+  #${GLog_INCLUDE_DIRS}
+  #${gflags_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${fftw_path}
   ${GeographicLib_INCLUDE_DIR}
@@ -212,7 +212,7 @@ set(${PROJECT_NAME}_ext_libs
   ${OpenCV_LIBS}
   Eigen3::Eigen
   gflags
-  glog::glog
+  #glog::glog
   ${Boost_LIBRARIES}
  
 )
@@ -220,7 +220,7 @@ set(${PROJECT_NAME}_ext_libs
 #add_library(${PROJECT_NAME} ${${PROJECT_NAME}_srcs})
 target_link_libraries(${PROJECT_NAME}
    ${${PROJECT_NAME}_ext_libs}
-   ${FFTW3_LIBRARIES}
+   ${FFTW_LIBRARIES}
    ${GeographicLib_LIBRARIES} 
 )
 
@@ -248,7 +248,7 @@ add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
-  ${Pangolin_LIBRARIES}
+  #${Pangolin_LIBRARIES}
   ${FFTW3_LIBRARIES}
   ${GeographicLib_LIBRARIES}
   gtsam

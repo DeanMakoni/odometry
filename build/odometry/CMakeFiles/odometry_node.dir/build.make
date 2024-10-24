@@ -159,28 +159,9 @@ odometry_node_EXTERNAL_OBJECTS =
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libboost_system.so.1.71.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libboost_thread.so.1.71.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libconsole_bridge.so.0.4
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_glgeometry.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_python.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_scene.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_tools.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_video.so
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libGeographic.so
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libgtsam.so.4.2.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_geometry.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libtinyobj.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_plot.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_display.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_vars.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_windowing.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_opengl.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libGLEW.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libOpenGL.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libGLX.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libGLU.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_image.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_packetstream.so
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /home/jetson/Pangolin/build/libpango_core.so
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libboost_serialization.so.1.71.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libboost_system.so.1.71.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libboost_thread.so.1.71.0
@@ -238,10 +219,10 @@ odometry_node_EXTERNAL_OBJECTS =
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libopencv_photo.so.4.2.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.2.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.2.0
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libGeographic.so
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libboost_filesystem.so.1.71.0
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/local/lib/libglog.so.0.5.0
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libgflags.so.2.2.2
+/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libfftw3.so
+/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libm.so
+/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: /usr/lib/aarch64-linux-gnu/libGeographic.so
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node: odometry/CMakeFiles/odometry_node.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/odometry/odometry_node"
 	cd /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build/odometry && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/odometry_node.dir/link.txt --verbose=$(VERBOSE)

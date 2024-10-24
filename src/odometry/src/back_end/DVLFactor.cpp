@@ -48,10 +48,9 @@
 // Constructor implementation
 DVLFactor::DVLFactor(Key pose_key, Key velocity_key,
                      const Vector3& measured_velocity,
-                     const Pose3& body_P_sensor,
                      const SharedNoiseModel& model)
     : NoiseModelFactor2<Pose3, Vector3>(model, pose_key, velocity_key),
-      measured_velocity_(measured_velocity), body_P_sensor_(body_P_sensor) {}
+      measured_velocity_(measured_velocity) {}
 
 // Error function implementation
 Vector DVLFactor::evaluateError(const Pose3& pose, const Vector3& velocity,

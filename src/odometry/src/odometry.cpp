@@ -14,7 +14,7 @@
 #include <nav_msgs/Path.h>
 #include <Eigen/Dense>
 
-// GTSAM related includes.
+// GTSAM related includes..
 #include <gtsam/navigation/Scenario.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/inference/Symbol.h>
@@ -53,7 +53,7 @@
 
 using namespace std;
 using namespace gtsam;
-using gtsam::symbol_shorthand::B;  // Bias  (ax,ay,az,gx,gy,gz)
+using gtsam::symbol_shorthand::B;  // Bias  (ax,ay,az,gx,gy,gz)dddd
 using gtsam::symbol_shorthand::V;  // Vel   (xdot,ydot,zdot)
 using gtsam::symbol_shorthand::X;  // Pose3 (x,y,z,r,p,y)//
 using gtsam::symbol_shorthand::P;  // Pressure bias
@@ -604,17 +604,17 @@ void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
                             X(graphManager->key("pose")), V(graphManager->key("velocity")),
                             B(graphManager->key("imu_bias")) );
       // add pressure factors      
-      Pressure->AddPressureFactor(graphManager->getGraph(), X(graphManager->key("pose")), P(graphManager->key("barometer")),sonar_timestamp);
+      //Pressure->AddPressureFactor(graphManager->getGraph(), X(graphManager->key("pose")), P(graphManager->key("barometer")),sonar_timestamp);
       //add Pressure values
-      Pressure->AddPressureValues(graphManager->newNodes, P(graphManager->key("barometer")));
+      //Pressure->AddPressureValues(graphManager->newNodes, P(graphManager->key("barometer")));
       //add DVL factors
       dvl->AddDVLFactor(graphManager->getGraph(), sonar_timestamp,
-                     X(graphManager->key("pose")), D(graphManager->key("dvl")), body_P_sensor);
+                    X(graphManager->key("pose")), D(graphManager->key("dvl")), body_P_sensor);
      //add DVL values
-      dvl->AddDVLValues(graphManager->newNodes,D(graphManager->key("dvl")));
+     dvl->AddDVLValues(graphManager->newNodes,D(graphManager->key("dvl")));
      
      
-    
+    /**
     //cv::Mat L_slope = ImageProcessing->computeSlantRange(sssImage, 13.6364, 1531,1, 100);
      /// Call SSS image processing functions
    //cv::Mat correctedImage = correctDistortion(sssImage,depth, L_slope);
@@ -678,10 +678,10 @@ void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
      
     } 
    
-
+ **/
      // Optimise and publish
      optimisation->Optimise_and_publish(*graphManager,*Imu);
-    
+  /**  
      gtsam::Pose3 optimised_pose = optimisation->getResult().at<gtsam::Pose3>(X(graphManager->key("pose")));
      gtsam::Point3 translation = optimised_pose.translation();
      // Extract the x and y coordinates
@@ -695,7 +695,7 @@ void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
      SSSFrame frame(brightnessEqualised,X(graphManager->key("pose")), lat, lon, alt1);
      // Add frames to the vector
      frames.emplace_back(frame);   
-     
+     **/
      // Increment keys
      graphManager->increment("pose");
      graphManager->increment("velocity");

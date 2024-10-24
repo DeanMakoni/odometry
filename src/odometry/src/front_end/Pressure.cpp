@@ -5,7 +5,12 @@
 PRESSURE::PRESSURE() {
     // Initialize the noise model
     //pressure_noise_model = gtsam::noiseModel::Isotropic::Variance(1, 1.0e-6);
-     pressure_noise_model = gtsam::noiseModel::Isotropic::Variance(1, 25);
+     //pressure_noise_model = gtsam::noiseModel::Isotropic::Variance(1, 25);
+     double sigma = 0.1;
+
+    // Create a diagonal noise model with the given standard deviation
+    pressure_noise_model = gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(1) << sigma).finished());
+
 }
 
 
@@ -22,9 +27,11 @@ void PRESSURE::AddPressureFactor(gtsam::NonlinearFactorGraph& graph, gtsam::Key 
         //std::lock_guard<std::mutex> lock(depth_mutex); // Use RAII for safer locking
         if (it->header.stamp <= sonar_timestamp) {
             this->pressure = it->fluid_pressure;
-             double depth = pressure/ (1000* 9.80665) + 0.32; // 0.3 if for presure sensor trnaslation. Hard coded for now.
+             double depth = pressure/ (1030*9.80665); // 0.3 if for presure sensor trnaslation. Hard coded for now.
+             // Correct meters using depth_sensor_offset_
+             double corrected_meters = depth + 0.4;
             // Convert measurement from pressure frame to world frame
-            graph.emplace_shared<gtsam::PressureFactor>(pose_key, depth, this->pressure_noise_model);
+            graph.emplace_shared<gtsam::PressureFactor>(pose_key,corrected_meters, this->pressure_noise_model);
             std::cout<<"Presuure is "<< pressure<<std::endl;
             std::cout<<"Height is "<< depth<<std::endl;
             ROS_WARN("Pressure message added to graph.");

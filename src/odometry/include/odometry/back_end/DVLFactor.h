@@ -58,7 +58,7 @@ public:
      * @param model The noise model associated with this factor.
      */
     DVLFactor(Key pose_key, Key velocity_key, const Vector3& measured_velocity,
-              const Pose3& body_P_sensor, const SharedNoiseModel& model);
+              const SharedNoiseModel& model);
 
     /**
      * @brief Evaluate the error of the factor.

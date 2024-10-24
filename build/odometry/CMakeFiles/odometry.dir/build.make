@@ -288,8 +288,9 @@ odometry_EXTERNAL_OBJECTS =
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libopencv_viz.so.4.2.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libopencv_xobjdetect.so.4.2.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libopencv_xphoto.so.4.2.0
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/local/lib/libglog.so.0.5.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libboost_filesystem.so.1.71.0
+/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libfftw3.so
+/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libm.so
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libGeographic.so
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libopencv_highgui.so.4.2.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libopencv_datasets.so.4.2.0
@@ -310,7 +311,6 @@ odometry_EXTERNAL_OBJECTS =
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libopencv_photo.so.4.2.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.2.0
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.2.0
-/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: /usr/lib/aarch64-linux-gnu/libgflags.so.2.2.2
 /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so: odometry/CMakeFiles/odometry.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Linking CXX shared library /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/lib/libodometry.so"
 	cd /home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build/odometry && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/odometry.dir/link.txt --verbose=$(VERBOSE)

@@ -26,7 +26,7 @@ void DVL::AddDVLFactor(gtsam::NonlinearFactorGraph& graph, const ros::Time& sona
             gtsam::NavState navstate(gtsam::Rot3(), gtsam::Point3(), dvl_velocity);
 
             graph.emplace_shared<DVLFactor>(
-              pose_key,dvl_key , this->dvl_velocity, body_P_sensor, this->dvl_noise);
+              pose_key,dvl_key , this->dvl_velocity, this->dvl_noise);
 
             //velocity_updated = true;
             ROS_WARN("Velocity message added to graph.");

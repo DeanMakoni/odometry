@@ -69,7 +69,7 @@ void Optimisation::Optimise_and_publish(GraphManager& graphManager, IMU& Imu) {
         //prior_pose = result.at<gtsam::Pose3>(X(this->key("pose")));
         //prior_velocity = result.at<gtsam::Vector3>(V(this->key("velocity")));
         // Overwrite the beginning of the preintegration for the next step.
-       this->prev_state =
+        this->prev_state =
           NavState(result.at<Pose3>(X(1)), result.at<gtsam::Vector3>((V(1))));
         // Update previous bias
        Imu.getPrevBias() = result.at<gtsam::imuBias::ConstantBias>(B(graphManager.key("imu_bias")));
@@ -87,11 +87,11 @@ void Optimisation::Optimise_and_publish(GraphManager& graphManager, IMU& Imu) {
      gtsam::Vector3 gyro_bias = current_bias.gyroscope();
      gtsam::Vector3 accel_bias = current_bias.accelerometer();
        
-       // Extract accelerometer and gyroscope biases
-   gtsam::Vector3 accel_bias1 = Imu.getPrevBias().accelerometer();
-   gtsam::Vector3 gyro_bias1 = Imu.getPrevBias().gyroscope();
+     // Extract accelerometer and gyroscope biases
+     gtsam::Vector3 accel_bias1 = Imu.getPrevBias().accelerometer();
+     gtsam::Vector3 gyro_bias1 = Imu.getPrevBias().gyroscope();
 
-      // Open files to write biases
+     // Open files to write biases
      std::ofstream accel_bias_file("accelerometer_biases.txt", std::ios::app);
      std::ofstream gyro_bias_file("gyroscope_biases.txt", std::ios::app);
      std::ofstream navstate_file("position_bias.txt", std::ios::app);
