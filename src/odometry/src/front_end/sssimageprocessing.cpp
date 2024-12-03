@@ -4,7 +4,8 @@
 
 // Constructor implementation
 SSSImageProcessing::SSSImageProcessing() {
-    sss_noise_model = gtsam::noiseModel::Isotropic::Variance(1, 5);
+    //sss_noise_model = gtsam::noiseModel::Isotropic::Variance(1, 5);
+    sss_noise_model = gtsam::noiseModel::Isotropic::Sigma(2, 10);
 }
 
 cv::Mat SSSImageProcessing::correctDistortion(const cv::Mat& sssImage, double H, const cv::Mat& L_slope) {
@@ -204,5 +205,5 @@ void SSSImageProcessing::AddSSSFactor(gtsam::NonlinearFactorGraph& graph, gtsam:
 void SSSImageProcessing::AddSSSValues(gtsam::Values& newNodes, gtsam::Key posekey2,const gtsam::Pose3& pose){
 
     //newNodes.insert(posekey1, this->pressure);
-    newNodes.insert(posekey2, pose);
+    //newNodes.insert(posekey2, pose);
 }

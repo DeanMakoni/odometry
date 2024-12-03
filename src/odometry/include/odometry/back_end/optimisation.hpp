@@ -52,11 +52,15 @@ public:
     Optimisation()
          {
         // Set ISAM2 parameters
-        parameters.relinearizeThreshold = 0.01;
-        parameters.relinearizeSkip = 1;
+        //parameters.relinearizeThreshold = 0.01;
+        parameters.relinearizeThreshold = 0.0001;
+        parameters.relinearizeSkip = 2;
         parameters.optimizationParams = gtsam::ISAM2DoglegParams();
+        //parameters.optimizationParams = gtsam::ISAM2GaussNewtonParams();
         parameters.factorization = gtsam::ISAM2Params::QR;
+        i =0;
         this->ISAM = new ISAM2(parameters);
+        marginalize = false;
         //optimised_odometry_publisher_ = nh_.advertise<nav_msgs::Odometry>("optimised_odometry_topic", 10);
         //path_publisher_ = nh_.advertise<nav_msgs::Path>("path_topic", 10);
         //pose_publisher_ = nh_.advertise<geometry_msgs::Pose>("pose_topic", 10);
@@ -65,7 +69,7 @@ public:
     /**
      * Optimise using ISAM2 and publish
      */
-    void Optimise_and_publish(GraphManager& graphManager, IMU& Imu);
+    void Optimise_and_publish(GraphManager& graphManager, IMU& Imu, int64_t timestamp_ms);
     //States
     gtsam::NavState  prev_state;
     gtsam::NavState prop_state;
@@ -84,12 +88,13 @@ public:
     //ros::Publisher path_publisher_;
     //std::string pose_topic_;
     //ros::Publisher pose_publisher_;
-    
+    bool marginalize;
+    gtsam::Key marginalizePose;
 private:
     gtsam::ISAM2* ISAM;
     gtsam::Values result;
     gtsam::ISAM2Params parameters;
-    
+    int i;
     
     
 };

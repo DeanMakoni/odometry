@@ -64,6 +64,7 @@ Vector DVLFactor::evaluateError(const Pose3& pose, const Vector3& velocity,
     //std::cout << "Measured Velocity: " << measured_velocity_.transpose() << std::endl;
     
     // Calculate error
+    /**
     Vector3 error = velocity - measured_velocity_;
      
     if (H1 || H2) {
@@ -78,6 +79,16 @@ Vector DVLFactor::evaluateError(const Pose3& pose, const Vector3& velocity,
     }
 
     return error;
+    **/
+      // ---------- Method 1 ---------- //
+    gtsam::Matrix36 Hrot__pose; // drot/dx
+    gtsam::Rot3 w_R_b = pose.rotation(Hrot__pose); // inv(R[B->N]) = R[N->B]
+    gtsam::Matrix33 Hvel__rot; // dvel/drot
+    gtsam::Vector3 vec_b = w_R_b.unrotate(velocity, Hvel__rot, H2); // transform world frame velocity into body frame
+    if (H1) *H1 = Hvel__rot * Hrot__pose; // derr/dx
+
+    // return error vector
+    return (gtsam::Vector3() << vec_b - measured_velocity_).finished(); // return velocity error
 }
 
 

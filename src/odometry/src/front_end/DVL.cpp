@@ -5,7 +5,7 @@
 // Constructor
 DVL::DVL() {
 	//initialise noise moel
-	dvl_noise = gtsam::noiseModel::Isotropic::Sigma(3, 0.1);
+	dvl_noise = gtsam::noiseModel::Isotropic::Sigma(3, 0.001);
 }
 
 // Method to add DVL messages to the vector
@@ -16,17 +16,27 @@ void DVL::AddDVLMessage(const cola2_msgs::DVL& dvl_msg) {
 
 // Method to add DVL factors to the graph
 void DVL::AddDVLFactor(gtsam::NonlinearFactorGraph& graph, const ros::Time& sonar_timestamp,
-                       gtsam::Key pose_key, gtsam::Key dvl_key, const gtsam::Pose3& body_P_sensor) {
+                       gtsam::Key pose_key, gtsam::Key velocity_key, const gtsam::Pose3& body_P_sensor) {
     //std::lock_guard<std::mutex> lock(velocity_mutex);
 
     // Iterate backward through the DVL messages
     for (auto it = dvl_messages_.rbegin(); it != dvl_messages_.rend(); ++it) {
         if (it->header.stamp <= sonar_timestamp) {
-            this->dvl_velocity = gtsam::Vector3(it->velocity.x, it->velocity.y, it->velocity.z);
-            gtsam::NavState navstate(gtsam::Rot3(), gtsam::Point3(), dvl_velocity);
+             //this->dvl_velocity = gtsam::Vector3(it->velocity.x, it->velocity.y, it->velocity.z);
+             this->dvl_velocity = gtsam::Vector3(it->velocity.x, it->velocity.y, it->velocity.z);
+             gtsam::NavState navstate(gtsam::Rot3(), gtsam::Point3(), dvl_velocity);
+             double roll = 3.1416;   // 180 degrees
+             double pitch = 0.0;
+             double yaw = -0.785;    // -45 degrees in radians
+
+             // Create the rotation from DVL to body frame using GTSAM's Rot3
+             gtsam::Rot3 R_dvl_to_body = gtsam::Rot3::RzRyRx(roll, pitch, yaw);
+             // Transform the measured velocity to the body frame
+            gtsam::Vector3 velocity_body = R_dvl_to_body * this->dvl_velocity;
+
 
             graph.emplace_shared<DVLFactor>(
-              pose_key,dvl_key , this->dvl_velocity, this->dvl_noise);
+              pose_key,velocity_key , velocity_body , this->dvl_noise);
 
             //velocity_updated = true;
             ROS_WARN("Velocity message added to graph.");
@@ -45,5 +55,8 @@ void DVL::AddDVLFactor(gtsam::NonlinearFactorGraph& graph, const ros::Time& sona
 // Method to add DVL values to the graph
 void DVL::AddDVLValues(gtsam::Values& newNode,gtsam::Key dvl_key) {
     //std::lock_guard<std::mutex> lock(velocity_mutex);
-    newNode.insert(dvl_key, this->dvl_velocity);
+   // newNode.insert(dvl_key, this->dvl_velocity);
 }
+
+
+

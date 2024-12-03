@@ -6,7 +6,7 @@ PRESSURE::PRESSURE() {
     // Initialize the noise model
     //pressure_noise_model = gtsam::noiseModel::Isotropic::Variance(1, 1.0e-6);
      //pressure_noise_model = gtsam::noiseModel::Isotropic::Variance(1, 25);
-     double sigma = 0.1;
+     double sigma = 5;
 
     // Create a diagonal noise model with the given standard deviation
     pressure_noise_model = gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(1) << sigma).finished());
@@ -31,6 +31,17 @@ void PRESSURE::AddPressureFactor(gtsam::NonlinearFactorGraph& graph, gtsam::Key 
              // Correct meters using depth_sensor_offset_
              double corrected_meters = depth + 0.4;
             // Convert measurement from pressure frame to world frame
+            
+            
+            double standPressure = 101.325; //# standard pressure [1 atm]
+            double kPaPerM = 9.804139432;// # pressure per meter [kPa/m]
+
+            //Raw depth calculation
+            double sen_bar_depth = (pressure-standPressure)/kPaPerM;// # calculated depth from auv pressure data
+            // Total depth calculation including barometer offset
+            double  depth1 = sen_bar_depth + 1.32;
+            
+            //graph.emplace_shared<gtsam::PressureFactor>(pose_key,corrected_meters, this->pressure_noise_model);
             graph.emplace_shared<gtsam::PressureFactor>(pose_key,corrected_meters, this->pressure_noise_model);
             std::cout<<"Presuure is "<< pressure<<std::endl;
             std::cout<<"Height is "<< depth<<std::endl;

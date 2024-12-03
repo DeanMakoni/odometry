@@ -15,7 +15,7 @@ public:
     OrbFeatureMatcher(int nfeatures = 500);
 
     // Method to match and filter features between two images
-    void matchAndFilter(const cv::Mat& img1, const cv::Mat& img2);
+    std::pair<cv::Mat, int>  matchAndFilter(const cv::Mat& img1, const cv::Mat& img2);
 
 private:
     cv::Ptr<cv::ORB> detector;     // ORB feature detector

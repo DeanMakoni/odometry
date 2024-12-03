@@ -1,0 +1,8 @@
+prefix=/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel
+
+Name: uuv_sensor_ros_plugins_msgs
+Description: Description of uuv_sensor_ros_plugins_msgs
+Version: 0.6.13
+Cflags: -I/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel/include
+Libs: -L${prefix}/lib 
+Requires: geometry_msgs message_runtime

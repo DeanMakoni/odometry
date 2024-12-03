@@ -13,3 +13,9 @@ gtsam::NonlinearFactorGraph& GraphManager::getGraph() const {
 gtsam::Values& GraphManager::getNewNodes() {
     return newNodes;
 }
+
+// Define setGraph to replace the existing graph with a new one
+void GraphManager::setGraph(const gtsam::NonlinearFactorGraph& newGraph) {
+    // Reset the shared pointer with a new graph that copies the content of newGraph
+    graph = std::make_shared<gtsam::NonlinearFactorGraph>(newGraph);
+}

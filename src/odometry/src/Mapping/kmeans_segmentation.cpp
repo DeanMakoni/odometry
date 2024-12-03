@@ -5,10 +5,9 @@
 using namespace cv;
 using namespace std;
 
-class KMeansSegmenter {
-public:
+
     // Constructor
-    KMeansSegmenter(int maxIterations = 100, double epsilon = 1.0)
+    KMeansSegmenter::KMeansSegmenter(int maxIterations = 100, double epsilon = 1.0)
         : maxIterations(maxIterations), epsilon(epsilon) {}
 
     // Function to perform K-means segmentation on an ROI
@@ -47,7 +46,7 @@ public:
     }
 
     // Function to calculate the within-group sum of squares (WGSS)
-    double calculateWGSS(const Mat& inputImage, int k) {
+    double KMeansSegmenter::calculateWGSS(const Mat& inputImage, int k) {
         // Ensure the matrix is continuous
         Mat continuousImage = inputImage.isContinuous() ? inputImage : inputImage.clone();
 
@@ -78,7 +77,7 @@ public:
     }
 
     // Function to determine the optimal K using the elbow method
-    int determineOptimalK(const Mat& inputImage, int maxK = 10) {
+    int KMeansSegmenter::determineOptimalK(const Mat& inputImage, int maxK = 10) {
         vector<double> wgssValues;
 
         for (int k = 1; k <= maxK; k++) {
@@ -102,7 +101,7 @@ public:
     }
 
     // Function to draw bounding boxes on distinct segmented clusters
-    void drawBoundingBoxesOnClusters(Mat& segmentedImage, const Mat& labels, int k) {
+    void KMeansSegmenter::drawBoundingBoxesOnClusters(Mat& segmentedImage, const Mat& labels, int k) {
         for (int clusterIndex = 0; clusterIndex < k; clusterIndex++) {
             // Create a binary mask for each cluster
             Mat clusterMask = Mat::zeros(segmentedImage.size(), CV_8U);
@@ -126,10 +125,8 @@ public:
         }
     }
 
-private:
-    int maxIterations;
-    double epsilon;
-};
+
+//};
 
 // Main function to run the example
 int main() {

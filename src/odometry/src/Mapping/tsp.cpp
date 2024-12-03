@@ -256,7 +256,7 @@ void TPS::calc_tps_y(std::vector<float>& x_reference, std::vector<float>& y_refe
 //method used  to make fill Vec with cople of feature points coordinates and track line cooordnates
 //cfp - couple feature points
 //tlp - traack lines points
-std::vector< Vec > TPS::fillVec(std::vector<float> x_cfp,std::vector<float> y_cfp, 
+TPS::fillControlVec(std::vector<float> x_cfp,std::vector<float> y_cfp, 
 	                   std::vector<float> x_tlp,std::vector<float>  y_tlp){      
 	// Fill control_points with x_reference and y_reference
 	 if (x_cfp.size() == y_cfp.size()) {
@@ -273,6 +273,30 @@ std::vector< Vec > TPS::fillVec(std::vector<float> x_cfp,std::vector<float> y_cf
 	 if (x_tlp.size() == y_tlp.size()) {
 	    for (size_t i = 0; i < x_matched.size(); ++i) {
 		control_points.emplace_back(x_tlp[i], y_tlp[i], 0.0f);  // z is 0
+	    }
+	 } else {
+	    throw std::runtime_error("Size mismatch between x_matched and y_matched");
+	 }
+
+}
+
+TPS::fillSenVec(std::vector<float> x_cfp,std::vector<float> y_cfp, 
+	                   std::vector<float> x_tlp,std::vector<float>  y_tlp){      
+	// Fill sen_points with x_reference and y_reference
+	 if (x_cfp.size() == y_cfp.size()) {
+	    sen_points.reserve(x_cfp.size() + x_cfp.size());  // Reserve space for all points
+
+	    for (size_t i = 0; i < x_cfp.size(); ++i) {
+		sen_points.emplace_back(x_cfp[i], y_cfp[i], 0.0f);  // z is 0
+	    }
+	 } else {
+	    throw std::runtime_error("Size mismatch between x_reference and y_reference");
+	 }
+
+	 // Now fill sen_points with x_matched and y_matched, appending to the end
+	 if (x_tlp.size() == y_tlp.size()) {
+	    for (size_t i = 0; i < x_matched.size(); ++i) {
+		sen_points.emplace_back(x_tlp[i], y_tlp[i], 0.0f);  // z is 0
 	    }
 	 } else {
 	    throw std::runtime_error("Size mismatch between x_matched and y_matched");

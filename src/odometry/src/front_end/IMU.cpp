@@ -55,14 +55,15 @@ IMU::IMU(
 
     Matrix33 measured_acc_cov = I_3x3 * pow(accel_noise_sigma, 2);
     Matrix33 measured_omega_cov = I_3x3 * pow(gyro_noise_sigma, 2);
-    Matrix33 integration_error_cov = I_3x3 * 1e-8;  // error committed in integrating position from velocities
+    Matrix33 integration_error_cov = I_3x3 * 1e-20;  // error committed in integrating position from velocities
     Matrix33 bias_acc_cov = I_3x3 * pow(accel_bias_rw_sigma, 2);
     Matrix33 bias_omega_cov = I_3x3 * pow(gyro_bias_rw_sigma, 2);
-    Matrix66 bias_acc_omega_init = I_6x6 * 1e-5;  // error in the bias used for preintegration
+    Matrix66 bias_acc_omega_init = I_6x6 * 1e-15;  // error in the bias used for preintegration
     
     // Initialize preintegration parameters
     this->p = gtsam::PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81); // Set gravity
-
+    
+    
     // Set the covariance matrices
     this->p->accelerometerCovariance = measured_acc_cov;
     this->p->integrationCovariance = integration_error_cov;
@@ -70,6 +71,7 @@ IMU::IMU(
     this->p->biasAccCovariance = bias_acc_cov;
     this->p->biasOmegaCovariance = bias_omega_cov;
     this->p->biasAccOmegaInt = bias_acc_omega_init;
+    this->p->setUse2ndOrderCoriolis(true); 
 
     // Initialize preintegrated measurements
     this->preintegrated = boost::make_shared<gtsam::PreintegratedCombinedMeasurements>(this->p, prior_imu_bias);
@@ -77,6 +79,7 @@ IMU::IMU(
      // Noise models for IMU
     this->velocity_noise_model = gtsam::noiseModel::Isotropic::Sigma(3, 0.00001); // m/s
     this->pose_noise = gtsam::noiseModel::Isotropic::Sigma(6, 0.00001); // m/s
+    
     this->bias_noise_model = gtsam::noiseModel::Isotropic::Sigma(6, 1e-4);
     
 }

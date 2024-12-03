@@ -76,6 +76,7 @@ public:
     mutable std::mutex sss_mutex;
     mutable std::mutex depth_mutex;
     mutable std::mutex velocity_mutex; 
+    mutable std::mutex graph_mutex;
     gtsam::Key biasKey = gtsam::Symbol('b', 0);
     int p = 1; // ISAM counter
     int b = 0; // barometer count
@@ -89,6 +90,8 @@ public:
    double current_time = 0.0; // Initialize current time
    int z = 1;
    bool initialised = false;
+   bool integrated  = false;
+   bool pressure_initialised = false;
    std::shared_ptr<ConstantTwistScenario> scenario;
    // Scenarios
    std::shared_ptr<ConstantTwistScenario>  zeroTwist;
@@ -202,12 +205,14 @@ ROSVO::ROSVO(ros::NodeHandle nh): nh_(nh){
   // Initialize publishers and subscribers
    
   imu_subscriber = nh_.subscribe<sensor_msgs::Imu>(imu_topic, 100, &ROSVO::imuCallback, this);
-  //imu_subscriber = nh_.subscribe<sensor_msgs::Imu>("/imu_adis_ros", 100, &ROSVO::imuCallback, this);
+  //imu_subscriber = nh_.subscribe<sensor_msgs::Imu>("/rexrov2/imu", 100, &ROSVO::imuCallback, this);
   sonar_subscriber = nh_.subscribe(sonar_topic, 100, &ROSVO::SSSimageCallback, this);
   dvl_subscriber = nh_.subscribe(dvl_topic, 100, &ROSVO::dvlCallback, this);
+  //dvl_subscriber = nh_.subscribe("/rexrov2/dvl", 100, &ROSVO::dvlCallback, this);
   depth_subscriber = nh_.subscribe( depth_topic, 100, &ROSVO::pressureCallback, this);
+  //depth_subscriber = nh_.subscribe("/rexrov2/pressure", 100, &ROSVO::pressureCallback, this);
   ground_truth_sub = nh_.subscribe("/girona500/navigator/odometry",100 , &ROSVO::groundCallback, this);
-  //ground_truth_sub = nh_.subscribe("/odometry",100 , &ROSVO::groundCallback, this);
+  //ground_truth_sub = nh_.subscribe("/rexrov2/pose_gt", 100, &ROSVO::groundCallback, this);
 
   vo_tf2_publisher_ = nh_.advertise<geometry_msgs::TransformStamped>("vo_tf2_topic", 10);
   //pose_publisher_ = nh_.advertise<geometry_msgs::Pose>("pose_topic", 10);
@@ -233,15 +238,16 @@ ROSVO::ROSVO(ros::NodeHandle nh): nh_(nh){
   graphManager->set_named_key("imu_bias", 0, 1);
   graphManager->set_named_key("landmark", 0, 1);
   graphManager->set_named_key("dvl", 0, 1);
+  graphManager->set_named_key("pressure", 0, 1);
   
   // intialise key for Timestamp
   graphManager->set_timestamp(0, ros::Time(0, 0));
     
    // We use the sensor specs to build the noise model for the IMU factor.
-   double accel_noise_sigma = 0.00001;
-   double gyro_noise_sigma = 0.00001;
+   double accel_noise_sigma = 0.004;//0.004;//0.00001;
+   double gyro_noise_sigma =  0.000107;//0.00034;//0.00001;
    double accel_bias_rw_sigma = 0.00001;
-   double gyro_bias_rw_sigma = 0.000000001;
+   double gyro_bias_rw_sigma =  0.000000001;
    gtsam::imuBias::ConstantBias prior_imu_bias;
    gtsam::imuBias::ConstantBias prev_bias;
    
@@ -309,11 +315,11 @@ ROSVO::ROSVO(ros::NodeHandle nh): nh_(nh){
     Matrix33 bias_acc_cov = I_3x3 * pow(accel_bias_rw_sigma, 2);
     Matrix33 bias_omega_cov = I_3x3 * pow(gyro_bias_rw_sigma, 2);
     Matrix66 bias_acc_omega_init = I_6x6 * 1e-5;  // error in the bias used for preintegration
-    auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81); // set gravity here
-   
+   // auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81); // set gravity here
+    auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD();
    // gravity vector 
- //  gtsam::Vector3 gravityVector(0, 0, -9.81);  // Gravity vector in NED frame
- //  p->n_gravity = gravityVector;
+   gtsam::Vector3 gravityVector(0, 0, -9.81);  // Gravity vector in NED frame
+   p->n_gravity = gravityVector;
    // PreintegrationBase params:
    p->accelerometerCovariance =
         measured_acc_cov;  // acc white noise in continuous
@@ -360,10 +366,19 @@ void ROSVO::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
        NavState initial_state = sick->navState(0);
        // Get NavState at current time
        //geometry_msgs::Quaternion orient = msg->orientation; 
-       //geometry_msgs::Quaternion orient = msg->orientation; 
-       //prior_pose = Pose3(gtsam::Rot3::Quaternion(orient.x, orient.y,orient.z,orient.w), Point3(0, 0,0));
-       //prior_pose = Pose3(gtsam::Rot3::Ypr(1, 1,10), Point3(0, 0,0));
-       //prior_velocity = Vector3(0,0,0);
+        //geometry_msgs::Quaternion orient = msg->orientation; 
+        //prior_pose = Pose3(gtsam::Rot3::Quaternion(orient.x, orient.y,orient.z,orient.w), Point3(0, 0,0));
+        // Define the quaternion components (x, y, z, w)
+       double x = 0;
+       double y = 0;
+       double z = 0;
+       double w = 1;
+
+      // Create a Rot3 object from the quaternion
+       gtsam::Rot3 rotation1 = gtsam::Rot3::Quaternion(w, x, y, z);
+       //gtsam::Pose3 prior_pose = Pose3(gtsam::Rot3::Ypr(0, 0, 0), Point3(0, 0, -25));
+       gtsam::Pose3 prior_pose = Pose3(rotation1, Point3(0, 0, -25));
+       gtsam::Vector3 prior_velocity = Vector3(0,0,0);
        //prior_pose = Pose3(Rot3(), Point3(0, 0,0));
        //prior_pose = Pose3(gtsam::Rot3::Ypr(1, 1,1), Point3(0, 0,0));
        //prior_velocity = Vector3(0,0,0);
@@ -384,14 +399,14 @@ void ROSVO::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
        graphManager->getGraph().emplace_shared< PriorFactor<imuBias::ConstantBias> >(B(next_bias_key), Imu->prior_imu_bias, Imu->bias_noise_model);
        
       
-      std::ofstream ofs("graph1.dot");
-      graphManager->getGraph().saveGraph(ofs);
-      ofs.close();
+       std::ofstream ofs("graph1.dot");
+       graphManager->getGraph().saveGraph(ofs);
+       ofs.close();
            
-      graphManager->increment("pose");
-      graphManager->increment("velocity");
-      graphManager->increment("imu_bias");      
-      prev_imu_timestamp = msg->header.stamp;
+       graphManager->increment("pose");
+       graphManager->increment("velocity");
+       graphManager->increment("imu_bias");      
+       prev_imu_timestamp = msg->header.stamp;
        
     }
     
@@ -399,7 +414,7 @@ void ROSVO::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
  else{
  
   // Ensure current timestamp is greater than the previous timestamp
-  
+   
  double dt1;
  if (current_timestamp.toSec() <= prev_imu_timestamp.toSec()) {
         ROS_WARN("Current IMU timestamp is not greater than the previous timestamp. Skipping this IMU message.");
@@ -447,7 +462,7 @@ void ROSVO::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
  //Vector3 measuredAcc = runner->measuredSpecificForce(current_time);
  
  Imu->getPreintegrated()->integrateMeasurement(measuredAcc,measuredOmega, dt1);
- 
+ integrated = true;
   
  // File to save NavStates
  std::ofstream navStateFile("navstates.txt",std::ios::app);
@@ -478,32 +493,31 @@ void ROSVO::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
 
 // Callback function for Fluid Pressure data
 void ROSVO::pressureCallback(const sensor_msgs::FluidPressure::ConstPtr& msg) {
-    ROS_INFO("Pressure Data");
-   Pressure->AddPressureMessage(*msg); 
-    // Lock the thread  
- depth_mutex.lock();
- ROS_INFO("Barometer topic received");
- // get latest barometer key
-// if (msg->header.stamp >= this->timestamp("pose")){
- 
-    
-// }
- 
-// else{
- //   ROS_WARN("Pressure message timestamp is less than the keyframe timestamp");
-//  } 
- 
- depth_mutex.unlock();
+
+if (initialised == true && msg->header.stamp >= initialisation_time){
+         
+         ROS_INFO("Pressure Data");
+         Pressure->AddPressureMessage(*msg); 
+            // Lock the thread  
+        depth_mutex.lock();
+        ROS_INFO("Barometer topic received");
+        pressure_initialised = true;
+         depth_mutex.unlock();
+ }
 }
 
 // Callback function for DVL data
 void ROSVO::dvlCallback(const cola2_msgs::DVL::ConstPtr& msg) {
+
+ if (initialised && msg->header.stamp >= initialisation_time &&
+      integrated && pressure_initialised){
     ROS_INFO("DVL Data: [velocity x: %f, y: %f, z: %f]", 
              msg->velocity.x, 
              msg->velocity.y, 
              msg->velocity.z);
    
    velocity_mutex.lock();
+   graph_mutex.lock();
   // if (msg->header.stamp >= this->timestamp("pose")){
   // Create a local copy of the message
     cola2_msgs::DVL modified_msg;
@@ -514,12 +528,58 @@ void ROSVO::dvlCallback(const cola2_msgs::DVL::ConstPtr& msg) {
     modified_msg.velocity.z += 9.0;
     
     dvl->AddDVLMessage(*msg);
-    
-//    } 
-//   else{
- //    ROS_WARN("DVL message timestamp is less than the keyframe timestamp");
- //  } 
-   velocity_mutex.unlock();       
+    // Check it has been initialised
+    int next_pose_key = graphManager->key("pose");
+    int next_velocity_key = graphManager->key("velocity");
+    int next_bias_key = graphManager->key("imu_bias");
+    int next_barometer_key = graphManager->key("barometer");
+    int next_dvl_key = graphManager->key("dvl");
+    std::cout << "pose key: " <<next_pose_key << std::endl;
+    std::cout << "velocity key: " <<next_velocity_key << std::endl;
+    if (next_pose_key > 0){ 
+     
+      //TODO: Set timestamp for this pose that we want to optimise
+      graphManager->set_timestamp("pose", msg->header.stamp);
+      ros::Time sonar_timestamp = msg->header.stamp;
+      // Convert ROS time to milliseconds since epoch as int64_t
+      int64_t timestamp_ms = msg->header.stamp.sec * 1000LL + msg->header.stamp.nsec / 1000000LL;
+      
+      // add imu factors
+      Imu->AddCombinedIMUFactor(graphManager->getGraph(), X(graphManager->key("pose", -1)),
+                             V(graphManager->key("pose", -1)), X(graphManager->key("pose")), V(graphManager->key("velocity")),
+                             B(graphManager->key("imu_bias", -1)), B(graphManager->key("imu_bias")));
+      // add IMU values to graph
+      Imu->AddValuesToNodes(optimisation->prev_state, 
+                            optimisation->prop_state, 
+                            graphManager->getNewNodes(), 
+                            X(graphManager->key("pose")), V(graphManager->key("velocity")),
+                            B(graphManager->key("imu_bias")) );
+      // add pressure factors      
+      Pressure->AddPressureFactor(graphManager->getGraph(), X(graphManager->key("pose")), P(graphManager->key("barometer")),sonar_timestamp);
+      //add Pressure values
+      //Pressure->AddPressureValues(graphManager->newNodes, P(graphManager->key("barometer")));
+      //add DVL factors
+     dvl->AddDVLFactor(graphManager->getGraph(), sonar_timestamp,
+            X(graphManager->key("pose")), V(graphManager->key("velocity")), body_P_sensor);
+      //add DVL values
+     //dvl->AddDVLValues(graphManager->newNodes,D(graphManager->key("dvl")));
+     
+   
+     // Optimise and publish
+     optimisation->Optimise_and_publish(*graphManager,*Imu, timestamp_ms);
+     // Increment keys
+     graphManager->increment("pose");
+     graphManager->increment("velocity");
+     graphManager->increment("imu_bias");
+     graphManager->increment("barometer");
+     graphManager->increment("dvl");
+     
+     
+     }
+
+   velocity_mutex.unlock();  
+   graph_mutex.unlock(); 
+   }    
 }
 
 
@@ -551,14 +611,19 @@ void ROSVO::groundCallback(const nav_msgs::Odometry::ConstPtr& msg)
      }
      // Open the file in append mode
     std::ofstream groundTruthFile("ground_truth.txt", std::ios::app);
-
+    
+    // Convert ROS time to milliseconds since epoch as int64_t
+    int64_t timestamp_ms = msg->header.stamp.sec * 1000LL + msg->header.stamp.nsec / 1000000LL;
     if (groundTruthFile.is_open())
     {
-        // Write the position data to the file
-        groundTruthFile << msg->pose.pose.position.x << " "
-                        << msg->pose.pose.position.y << " "
-                        << msg->pose.pose.position.z << std::endl;
-
+         groundTruthFile << msg->pose.pose.position.x << " "
+                   << msg->pose.pose.position.y << " "
+                   << msg->pose.pose.position.z << " "
+                   << msg->twist.twist.linear.x << " "
+                   << msg->twist.twist.linear.y << " "
+                   << msg->twist.twist.linear.z << " "
+                   << timestamp_ms  
+                   << std::endl;
         // Close the file
         groundTruthFile.close();
     
@@ -580,41 +645,9 @@ void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
          return;
       }
             
-    // Check it has been initialised
-    int next_pose_key = graphManager->key("pose");
-    int next_velocity_key = graphManager->key("velocity");
-    int next_bias_key = graphManager->key("imu_bias");
-    int next_barometer_key = graphManager->key("barometer");
-    int next_dvl_key = graphManager->key("dvl");
-    std::cout << "pose key: " <<next_pose_key << std::endl;
-    std::cout << "velocity key: " <<next_velocity_key << std::endl;
-    if (next_pose_key > 0){ 
+  
      
-      //TODO: Set timestamp for this pose that we want to optimise
-      graphManager->set_timestamp("pose", msg->header.stamp);
-      ros::Time sonar_timestamp = msg->header.stamp;
-      // add imu factors
-      Imu->AddCombinedIMUFactor(graphManager->getGraph(), X(graphManager->key("pose", -1)),
-                             V(graphManager->key("pose", -1)), X(graphManager->key("pose")), V(graphManager->key("velocity")),
-                             B(graphManager->key("imu_bias", -1)), B(graphManager->key("imu_bias")));
-      // add IMU values to graph
-      Imu->AddValuesToNodes(optimisation->prev_state, 
-                            optimisation->prop_state, 
-                            graphManager->getNewNodes(), 
-                            X(graphManager->key("pose")), V(graphManager->key("velocity")),
-                            B(graphManager->key("imu_bias")) );
-      // add pressure factors      
-      //Pressure->AddPressureFactor(graphManager->getGraph(), X(graphManager->key("pose")), P(graphManager->key("barometer")),sonar_timestamp);
-      //add Pressure values
-      //Pressure->AddPressureValues(graphManager->newNodes, P(graphManager->key("barometer")));
-      //add DVL factors
-      dvl->AddDVLFactor(graphManager->getGraph(), sonar_timestamp,
-                    X(graphManager->key("pose")), D(graphManager->key("dvl")), body_P_sensor);
-     //add DVL values
-     dvl->AddDVLValues(graphManager->newNodes,D(graphManager->key("dvl")));
-     
-     
-    /**
+    
     //cv::Mat L_slope = ImageProcessing->computeSlantRange(sssImage, 13.6364, 1531,1, 100);
      /// Call SSS image processing functions
    //cv::Mat correctedImage = correctDistortion(sssImage,depth, L_slope);
@@ -627,10 +660,33 @@ void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
     cv::waitKey(1);
     cv::imshow("Brightness Equalised", brightnessEqualised);
     cv::waitKey(1);
+    // we need if statement starting from here
     
+    /**
+    graph_mutex.lock();
+    int current_pose_key = graphManager->key("pose");
+    graph_mutex.unlock();
+    if (current_pose_key > 0 && current_pose_key % 30 == 0){
+    graph_mutex.lock();
+         int next_pose_key = graphManager->key("pose",-1);
+         gtsam::Pose3 temp_pose;
+      if (!optimisation->getResult().exists(X(next_pose_key))) {
+    
+        	int prev_pose_key = graphManager->key("pose",-2);
+       	temp_pose = optimisation->getResult().at<gtsam::Pose3>(X(prev_pose_key));
+    	
+      } else {
+    
+          temp_pose = optimisation->getResult().at<gtsam::Pose3>(X(next_pose_key));
+          
+        }
+     
+    
+    graph_mutex.unlock();
     if (!frames.empty()) {
-    // Assign temporal global id  by using previous pose
-     gtsam::Pose3 temp_pose = optimisation->prop_state.pose();
+    // Assign temporal global id  by using currrent pose key
+    // wait for the graph to optimise first
+       
      gtsam::Point3 translation = temp_pose.translation();
      // Extract the x and y coordinates
      double x_t = translation.x();
@@ -639,18 +695,9 @@ void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
      double lat, lon, alt1;
      int zone;
      bool northp;
-     GeographicLib::UTMUPS::Reverse(x_t, y_t, zone, northp, lat, lon);
-     SSSFrame sourceFrame(brightnessEqualised,X(graphManager->key("pose")), lat, lon, alt1);
-     // compare with prev frame fisrst
-     SSSFrame& prevFrame = frames.back();
-     // Compute phase correlation and translation
-     cv::Point2d phase_translation = ImageProcessing->phaseCorrelation(brightnessEqualised, prevFrame.image);
-     gtsam::Point2 measured_translation(phase_translation.x, phase_translation.y);
-     // add factor to graph
-     ImageProcessing->AddSSSFactor(graphManager->getGraph(),sourceFrame.poseKey , prevFrame.poseKey , measured_translation);
-     ImageProcessing->AddSSSValues(graphManager->newNodes, prevFrame.poseKey, 
-             optimisation->getResult().at<gtsam::Pose3>(prevFrame.poseKey));
-   
+     //GeographicLib::UTMUPS::Reverse(x_t, y_t, zone, northp, lat, lon);.
+     SSSFrame sourceFrame(brightnessEqualised, X(next_pose_key),temp_pose);
+    
      #pragma omp parallel for
      for (int i = 0; i < frames.size()-1; ++i) {
         // Calculate X and Y distances between the source frame and the current frame
@@ -659,14 +706,23 @@ void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
         double dy = distanceXY.second; // Y distance (North-South)
 
         // Check if the distances are within the threshold
-        if (std::abs(dx) <= 5) {
+        //if (std::abs(dx) == 5) {
+        if (i % 200 == 0) {
+            
             // Compute phase correlation and translation
             cv::Point2d translation = ImageProcessing->phaseCorrelation(brightnessEqualised, frames[i].image);
-            gtsam::Point2 measured_translation(translation.x, translation.y);
+            //gtsam::Point2 measured_translation(translation.x, translation.y);
+            gtsam::Point2 measured_translation(0, 0);
             // add factor to graph
-            ImageProcessing->AddSSSFactor(graphManager->getGraph(),sourceFrame.poseKey ,frames[i].poseKey , measured_translation);
-            ImageProcessing->AddSSSValues(graphManager->newNodes, frames[i].poseKey, 
-             optimisation->getResult().at<gtsam::Pose3>(frames[i].poseKey));
+            // lock graph first
+           graph_mutex.lock();
+           
+           ImageProcessing->AddSSSFactor(graphManager->getGraph(),sourceFrame.poseKey ,frames[i].poseKey , measured_translation);
+           //ImageProcessing->AddSSSValues(graphManager->newNodes, frames[i].poseKey, 
+         //  optimisation->getResult().at<gtsam::Pose3>(frames[i].poseKey));
+           optimisation->marginalize = true;
+           optimisation->marginalizePose = frames[i].poseKey;
+           graph_mutex.unlock();
             #pragma omp critical
             {   
                 std::cout << "Overlap with frame " << i << " (Key: " << frames[i].poseKey << ")\n";
@@ -675,14 +731,12 @@ void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
             }
         }
     }
-     
+     frames.emplace_back(sourceFrame);
     } 
-   
- **/
-     // Optimise and publish
-     optimisation->Optimise_and_publish(*graphManager,*Imu);
-  /**  
-     gtsam::Pose3 optimised_pose = optimisation->getResult().at<gtsam::Pose3>(X(graphManager->key("pose")));
+   else{
+     graph_mutex.lock();
+     gtsam::Pose3 optimised_pose = optimisation->getResult().at<gtsam::Pose3>(X(next_pose_key));
+     graph_mutex.unlock();
      gtsam::Point3 translation = optimised_pose.translation();
      // Extract the x and y coordinates
      double x_t = translation.x();
@@ -691,21 +745,15 @@ void ROSVO::SSSimageCallback(const sensor_msgs::Image::ConstPtr& msg) {
      double lat, lon, alt1;
      int zone;
      bool northp;
-     GeographicLib::UTMUPS::Reverse(x_t, y_t, zone, northp, lat, lon);
-     SSSFrame frame(brightnessEqualised,X(graphManager->key("pose")), lat, lon, alt1);
+     //GeographicLib::UTMUPS::Reverse(x_t, y_t, zone, northp, lat, lon);
+     SSSFrame frame(brightnessEqualised,X(next_pose_key),optimised_pose );
      // Add frames to the vector
-     frames.emplace_back(frame);   
-     **/
-     // Increment keys
-     graphManager->increment("pose");
-     graphManager->increment("velocity");
-     graphManager->increment("imu_bias");
-     graphManager->increment("barometer");
-     graphManager->increment("dvl");
+     frames.emplace_back(frame);
+         
+      }  
+     }**/
+     sss_mutex.unlock();
      
-     
-     }
- sss_mutex.unlock();
 }
 
 
@@ -718,3 +766,28 @@ int main(int argc, char** argv) {
     return 0;
     
 }
+
+/**
+optimisation->prev_state = NavState(optimisation->prior_pose, optimisation->prior_velocity);
+       optimisation->prop_state = optimisation->prev_state;
+       
+       //graphManager->getNewNodes().insert(X(next_pose_key), optimisation->prior_pose);
+       graphManager->getNewNodes().insert(X(next_pose_key),prior_pose);
+       //graphManager->getNewNodes().insert(V(next_velocity_key),optimisation->prior_velocity);
+       graphManager->getNewNodes().insert(V(next_velocity_key),prior_velocity);
+       graphManager->getNewNodes().insert(B(next_bias_key), imuBias::ConstantBias());
+                    //graph->emplace_shared< PriorFactor<Pose3> >(X(next_pose_key),initial_state.pose(), pose_noise);
+                   //graph->emplace_shared< PriorFactor<Vector3> >(V(next_velocity_key), initial_state.v(), velocity_noise_model);
+       //graphManager->getGraph().emplace_shared< PriorFactor<Pose3> >(X(next_pose_key),optimisation->prior_pose, Imu->pose_noise);
+       gtsam::noiseModel::Isotropic::shared_ptr  pose_noise = gtsam::noiseModel::Isotropic::Sigma(6, 10);
+       graphManager->getGraph().emplace_shared< PriorFactor<Pose3> >(X(next_pose_key),optimisation->prior_pose, pose_noise);
+       //graphManager->getGraph().emplace_shared< PriorFactor<Vector3> >(V(next_velocity_key), optimisation->prior_velocity, Imu->velocity_noise_model);
+       gtsam::noiseModel::Isotropic::shared_ptr velocity_noise_model = gtsam::noiseModel::Isotropic::Sigma(3, 10);
+       graphManager->getGraph().emplace_shared< PriorFactor<Vector3> >(V(next_velocity_key),prior_velocity, velocity_noise_model);
+       //graphManager->getGraph().emplace_shared< PriorFactor<imuBias::ConstantBias> >(B(next_bias_key), Imu->prior_imu_bias, Imu->bias_noise_model);
+       gtsam::Vector bias_noise_vector(6);
+       bias_noise_vector << 1, 1, 1, 0.1, 0.1, 0.1; // Fill each element individually
+       // Use Diagonal noise model with the filled vector
+       gtsam::noiseModel::Diagonal::shared_ptr bias_noise_model = gtsam::noiseModel::Diagonal::Sigmas(bias_noise_vector);
+       graphManager->getGraph().emplace_shared< PriorFactor<imuBias::ConstantBias> >(B(next_bias_key), Imu->prior_imu_bias, bias_noise_model);
+**/

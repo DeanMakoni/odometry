@@ -14,6 +14,7 @@
 #include <Eigen/Dense>
 
 // GTSAM related includes.
+#include <gtsam/base/FastList.h>
 #include <gtsam/navigation/Scenario.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/inference/Symbol.h>
@@ -52,7 +53,13 @@ using gtsam::symbol_shorthand::D;  // DVL
 using gtsam::symbol_shorthand::L;  // Landmark point
 
 // Optimisie and pubblissh using ISAM
-void Optimisation::Optimise_and_publish(GraphManager& graphManager, IMU& Imu) {
+void Optimisation::Optimise_and_publish(GraphManager& graphManager, IMU& Imu,int64_t timestamp_ms) {
+
+    // Check if the pose key has reached a multiple of 30 for batch re-optimization
+     int max_key = graphManager.key("pose");
+     // Instead of batch re-optimization, perform marginalization every 30 poses
+        
+    
     // ISAM2 solver
     try {
         int max_key = graphManager.key("pose");
@@ -69,11 +76,11 @@ void Optimisation::Optimise_and_publish(GraphManager& graphManager, IMU& Imu) {
         //prior_pose = result.at<gtsam::Pose3>(X(this->key("pose")));
         //prior_velocity = result.at<gtsam::Vector3>(V(this->key("velocity")));
         // Overwrite the beginning of the preintegration for the next step.
-        this->prev_state =
-          NavState(result.at<Pose3>(X(1)), result.at<gtsam::Vector3>((V(1))));
+        
         // Update previous bias
-       Imu.getPrevBias() = result.at<gtsam::imuBias::ConstantBias>(B(graphManager.key("imu_bias")));
+        Imu.getPrevBias() = result.at<gtsam::imuBias::ConstantBias>(B(graphManager.key("imu_bias")));
        
+
        
       // Plotting stuff 
       gtsam::Pose3 current_pose1 = result.at<gtsam::Pose3>(X(graphManager.key("pose")));
@@ -97,7 +104,7 @@ void Optimisation::Optimise_and_publish(GraphManager& graphManager, IMU& Imu) {
      std::ofstream navstate_file("position_bias.txt", std::ios::app);
      std::ofstream bias_file("biases.txt", std::ios::app);
 
-if (navstate_file.is_open() && bias_file.is_open()) {
+ if (navstate_file.is_open() && bias_file.is_open()) {
     // Save position and velocity
     navstate_file << position1.x() << " " << position1.y() << " " << position1.z() << " "
                   << current_velocity1.x() << " " << current_velocity1.y() << " " << current_velocity1.z() << "\n";
@@ -124,7 +131,8 @@ if (navstate_file.is_open() && bias_file.is_open()) {
         
      // Reset the preintegration object
      Imu.getPreintegrated()->resetIntegrationAndSetBias(Imu.getPrevBias());
-        
+     
+     
         
         
         /// Save graph 
@@ -135,15 +143,30 @@ if (navstate_file.is_open() && bias_file.is_open()) {
      //      ofs.close();
      //   }
         //poses to file for plotting
-        ofstream positionsFile("positions.txt");
-         for (int key = 0; key < max_key; ++key) {
-            gtsam::Pose3 pose = result.at<gtsam::Pose3>(X(key));
+        ofstream positionsFile("positions.txt", std::ios::app);
+         //for (int key = 0; key < max_key; ++key) {
+         if (positionsFile.is_open()) {
+            gtsam::Pose3 pose = result.at<gtsam::Pose3>(X(graphManager.key("pose")));
             gtsam::Vector3 position = pose.translation();
-            positionsFile << position.x() << " " << position.y() << " " << position.z() << endl;
-            ROS_INFO("Optimised height:  %f", position.z());
+            positionsFile << position.x() << " " << position.y() << " " << position.z() <<" "<< timestamp_ms << endl;
+            ///ROS_INFO("Optimised height:  %f", position.z());
+            positionsFile.close();
         }
-      positionsFile.close();
-    
+     
+      
+     // velocity file
+      gtsam::Vector3 optimised_velocity = result.at<gtsam::Vector3>(V(graphManager.key("velocity")));
+      std::ofstream velocity_file("velocity.txt", std::ios::app);
+     
+      if (velocity_file.is_open()) {
+ 	   velocity_file << optimised_velocity.x() << " "
+                  << optimised_velocity.y() << " "
+                  << optimised_velocity.z() << " "
+                  << timestamp_ms
+                  <<std::endl;
+    	velocity_file.close();
+      }
+      /**
       std::ofstream residualsFile("residuals1.txt");
       std::vector<double> residuals;
       size_t graph_size = graphManager.getGraph().size();
@@ -156,12 +179,12 @@ if (navstate_file.is_open() && bias_file.is_open()) {
             ROS_INFO("Factor %zu error: %f", i, error);
         }
         residualsFile.close();
-       
+       **/
       
-      gtsam::Matrix poseCovariance = ISAM->marginalCovariance(X(graphManager.key("pose")));
-      gtsam::Matrix velocityCovariance = ISAM->marginalCovariance(V(graphManager.key("velocity")));
-      std::ofstream poseCovarianceFile("pose_covariance_per_pose.txt");
-      std::ofstream velocityCovarianceFile("velocity_covariance_per_pose.txt");
+      //gtsam::Matrix poseCovariance = ISAM->marginalCovariance(X(graphManager.key("pose")));
+     // gtsam::Matrix velocityCovariance = ISAM->marginalCovariance(V(graphManager.key("velocity")));
+     // std::ofstream poseCovarianceFile("pose_covariance_per_pose.txt");
+     // std::ofstream velocityCovarianceFile("velocity_covariance_per_pose.txt");
       /**
       for (int key = 0; key <= max_key; ++key) {
             //gtsam::Matrix poseCovariance = ISAM->marginalCovariance(X(key));
@@ -191,18 +214,68 @@ if (navstate_file.is_open() && bias_file.is_open()) {
      //Print the joint covariance matrix
      // std::cout << "Joint Marginal Covariance:\n" << jointCovariance << std::endl;
    //   gtsam::Matrix poseCovariance1 = marginals.marginalCovariance(X(this->key("pose")));
-      std::cout << "Pose Covariance:\n" << poseCovariance << std::endl;
+     // std::cout << "Pose Covariance:\n" << poseCovariance << std::endl;
       // Compute and print velocity covariance
   //    gtsam::Matrix velocityCovariance1 = marginals.marginalCovariance(V(this->key("velocity")));
-      std::cout << "Velocity Covariance:\n" << velocityCovariance << std::endl;
+    //  std::cout << "Velocity Covariance:\n" << velocityCovariance << std::endl;
 
         // Reset the graph
         
         graphManager.getGraph().resize(0);
         graphManager.getNewNodes().clear();
         
+        //if (this->marginalize == true) {
         
+        if (max_key % 500 == 0) {
+            ROS_INFO("Performing marginalization at key 30");
+
+            // Define the window size for the sliding window (e.g., keep only the last 5 poses)
+            int window_size = 5;
+            int oldest_key_to_keep = max_key - window_size;
+            gtsam::Symbol symbol(this->marginalize);
+            // Extract the integer index
+            int marginaliseKey = static_cast<int>(symbol.index());
+            //int oldest_key_to_keep = marginaliseKey - window_size;
+            //gtsam::Values currentEstimate = this->ISAM->getLinearizationPoint();
+            gtsam::FastList<gtsam::Key> keysToMarginalize;
+            
+            for (int i = 0; i <= oldest_key_to_keep; ++i) {  
+                     gtsam::Key poseKey = X(i);
+                     gtsam::Key velocityKey = V(i);
+                     gtsam::Key biasKey = B(i);
+                     gtsam::Key dvlKey = D(i);
+                     gtsam::Key pressureKey = P(i);
+                     // Check if the keys exist in the current ISAM result or values
+                    if (this->ISAM->valueExists(poseKey)) {
+                           keysToMarginalize.push_back(poseKey);
+                     }
+                    if (this->ISAM->valueExists(velocityKey)) {
+                          keysToMarginalize.push_back(velocityKey);
+                    }
+                    if (this->ISAM->valueExists(biasKey)) {
+                          keysToMarginalize.push_back(biasKey);
+                   }
+                   if (this->ISAM->valueExists(dvlKey)) {
+                          keysToMarginalize.push_back(dvlKey);
+                   }
+                   if (this->ISAM->valueExists(pressureKey)) {
+                          keysToMarginalize.push_back(pressureKey);
+                   }
+                   
+               }
+             
+           
+            // start adding to keysToMarginalize for next round in this variable.
+            
+            //this->ISAM->update();
+            this->ISAM->marginalizeLeaves(keysToMarginalize);  // Marginalize out old keys
+            this->marginalize == false;
+            std::ofstream ofs("marginalisedgraph.dot");
+            graphManager.getGraph().saveGraph(ofs);
+            ofs.close();
+          } 
         
+        /**
         // Publish poses
         nav_msgs::Odometry optimised_odometry_msg;
         optimised_odometry_msg.header.stamp = ros::Time::now();
@@ -241,10 +314,10 @@ if (navstate_file.is_open() && bias_file.is_open()) {
         // Assign twist and pose message to the odometry message
         optimised_odometry_msg.twist.twist.linear = twist_msg.linear;
         optimised_odometry_msg.pose.pose = pose_msg;
-        
+        **/
         // Odometry msg covariance
         
-        
+        /**
         for (int i = 0; i < 6; ++i) {
             for (int j = 0; j < 6; ++j) {
                 optimised_odometry_msg.pose.covariance[i * 6 + j] = poseCovariance(i, j);
@@ -280,15 +353,55 @@ if (navstate_file.is_open() && bias_file.is_open()) {
             
             path.poses.push_back(pose_stamped_msg);
         }
-        
+        **/
        // this->pose_publisher_.publish(pose_msg);
        // this->optimised_odometry_publisher_.publish(optimised_odometry_msg);
        // this->path_publisher_.publish(path);
+      
         
     } catch (const gtsam::IndeterminantLinearSystemException& ex) {
         result.print();
         ROS_INFO("Did not solve correctly");
     }
+   
+ /**   
+   if ((max_key) % 30 == 0) {
+          ROS_INFO("Performing batch re-optimization at key 30");
+
+          gtsam::Values initialEstimate;
+         for (int i = 0; i <= max_key; ++i) {
+               // Define the keys
+              gtsam::Key poseKey = X(i);
+              gtsam::Key velocityKey = V(i);
+              gtsam::Key biasKey = B(i);
+
+             // Insert only if the key exists in the current result
+             if (result.exists(poseKey)) {
+                   initialEstimate.insert(poseKey, result.at<gtsam::Pose3>(poseKey)); // Current pose estimate
+             }
+            if (result.exists(velocityKey)) {
+                initialEstimate.insert(velocityKey, result.at<gtsam::Vector3>(velocityKey)); // Current velocity estimate
+             }
+           if (result.exists(biasKey)) {
+                initialEstimate.insert(biasKey, result.at<gtsam::imuBias::ConstantBias>(biasKey)); // Current bias estimate
+           }
+         }
+
+     try {
+        // Run batch optimization using Levenberg-Marquardt optimizer
+        gtsam::LevenbergMarquardtOptimizer batchOptimizer(graphManager.getGraph(), initialEstimate);
+        result = batchOptimizer.optimize();
+
+        // Update ISAM2 with optimized result
+        this->ISAM->update();
+        ROS_INFO("Batch re-optimization completed");
+
+      } catch (const gtsam::IndeterminantLinearSystemException& ex) {
+           ROS_ERROR("Batch re-optimization failed due to an indeterminate linear system");
+          return;
+       }
+ } **/
+ 
 }
 
 

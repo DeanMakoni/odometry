@@ -30,7 +30,10 @@ public:
     void calc_tps_y(std::vector<float>& x_reference, std::vector<float>& y_reference,
                            std::vector<float>& x_matched, std::vector<float>& y_matched);
 
-    std::vector< Vec > fillVec(std::vector<float> x_cfp,std::vector<float> y_cfp,
+    fillControlVec(std::vector<float> x_cfp,std::vector<float> y_cfp,
+    					std::vector<float> x_tlp,std::vector<float> y_tlp);
+    					
+    fillSenVec(std::vector<float> x_cfp,std::vector<float> y_cfp,
     					std::vector<float> x_tlp,std::vector<float> y_tlp);
 };
 

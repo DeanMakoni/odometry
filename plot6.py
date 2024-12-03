@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-# Load positions from the files
-positions = np.loadtxt('positions.txt')
-ground_truth = np.loadtxt('ground_truth.txt')
+# Load only the relevant columns from the files
+# The first three columns are x, y, z for both files
+positions = np.loadtxt('positions.txt', usecols=(0, 1, 2))
+ground_truth = np.loadtxt('ground_truth.txt', usecols=(0, 1, 2))
 
 # Extract x, y, z coordinates
 x = positions[:, 0]

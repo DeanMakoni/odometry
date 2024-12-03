@@ -131,6 +131,7 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build/gtest/cmake_install.cmake")
+  include("/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build/uuv_sensor_ros_plugins_msgs/cmake_install.cmake")
   include("/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build/cola2_msgs/cmake_install.cmake")
   include("/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/build/odometry/cmake_install.cmake")
 

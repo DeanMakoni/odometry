@@ -1,2 +1,2 @@
-cola2_msgs:odometry
+cola2_msgs:odometry:uuv_sensor_ros_plugins_msgs
 -DCATKIN_DEVEL_PREFIX=/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/devel -DCMAKE_INSTALL_PREFIX=/home/jetson/Downloads/sonar_imu_dvl_pressure_odometry/install -G Unix Makefiles
